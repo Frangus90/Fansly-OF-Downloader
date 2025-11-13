@@ -92,7 +92,12 @@ def main(config: FanslyConfig) -> int:
     # Update window title with specific downloader version
     set_window_title(f"Fansly Downloader NG v{config.program_version}")
 
-    print_logo()
+    # Print logo with encoding error handling for Windows
+    try:
+        print_logo()
+    except UnicodeEncodeError:
+        # Fallback for Windows consoles that don't support UTF-8
+        print(f"\nFansly Downloader NG v{config.program_version}\n")
 
     delete_temporary_pyinstaller_files()
     load_config(config)

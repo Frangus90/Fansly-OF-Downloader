@@ -159,6 +159,102 @@ After all requirements are met run `fansly_downloader_ng.py`.
 
 Raw Python code versions of **Fansly Downloader NG** do not receive automatic updates. If an update is available you will be notified but need to manually download and set-up the [current repository](https://github.com/prof79/fansly-downloader-ng/archive/refs/heads/master.zip) again.
 
+## 🖥️ GUI Version (NEW!)
+
+**Fansly Downloader NG** now includes a modern graphical user interface with dark theme!
+
+### Running the GUI
+
+**Windows Executable:**
+```bash
+fansly_downloader_gui.exe
+```
+
+**Python Source:**
+```bash
+python fansly_downloader_gui.py
+```
+
+### First Time Setup
+
+On first run, a setup wizard will automatically guide you through configuration:
+
+1. **Authentication Setup**: Paste your Fansly authorization token
+   - Accepts both JSON format `{"token":"..."}` and plain token string
+   - Token is automatically extracted from JSON if pasted
+
+2. **User Agent**: Paste your browser's user agent string
+   - Used to identify your browser when making requests to Fansly
+
+3. **Check Key**: Automatically fetched from Fansly
+   - Falls back to a default value if fetch fails
+   - No manual input required
+
+The wizard will create `config.ini` automatically with all required settings.
+
+### GUI Features
+
+- **Creator Management**: Add, remove, and select multiple creators from a visual list
+- **Download Settings**: Configure download path, download modes (Timeline, Messages, Collections), and advanced options
+- **Real-time Progress**: See download progress with file counts, current file name, and status updates
+- **Connection Testing**: Verify your credentials work before starting downloads
+- **Log Access**: Press **Ctrl+L** to open diagnostic log file for troubleshooting
+- **Error Handling**: Clear error messages with automatic logging to file
+- **Stop Downloads**: Cancel in-progress downloads gracefully
+
+### Building Your Own Windows EXE
+
+If you want to build the GUI executable yourself:
+
+1. Install PyInstaller:
+   ```bash
+   pip install pyinstaller
+   ```
+
+2. Run the build script:
+   ```bash
+   python build_exe.py
+   ```
+
+3. Find the executable in `dist/fansly_downloader_gui.exe`
+
+The build script automatically includes all required assets, icons, and dependencies.
+
+### GUI Troubleshooting
+
+**Empty fields after setup wizard:**
+- Check the log file (`fansly_downloader.log`) for errors
+- Press **Ctrl+L** in the GUI to open the log file
+- Ensure you're pasting the complete token and user agent strings
+- Try running the wizard again from a fresh start
+
+**Downloads failing or not starting:**
+- Verify your auth token is still valid using the "Test Connection" button
+- Check that the download path exists and has write permissions
+- Review the log file for specific error messages
+- Ensure you have active subscriptions to the creators you're downloading
+
+**Application won't start or crashes immediately:**
+- Check `fansly_downloader.log` in the same directory as the application
+- Ensure all dependencies are installed (if running from Python source)
+- Try deleting `config.ini` and `gui_state.json` to force a fresh setup
+- For EXE builds, ensure you're running on Windows 10/11
+
+**Where is the log file?**
+- Same directory as the application executable or Python script
+- Named `fansly_downloader.log`
+- Overwrites on each app start (single file, not rolling logs)
+- Contains all diagnostic output including errors and progress
+
+### CLI vs GUI
+
+Both versions offer the same core functionality:
+
+- **CLI Version** (`fansly_downloader_ng.py`): Full command-line support, non-interactive mode, suitable for automation and scheduled tasks
+- **GUI Version** (`fansly_downloader_gui.py`): Modern visual interface, easier for non-technical users, real-time progress visualization
+
+Choose the version that best fits your workflow!
+
 ## 🚀 Quick Start
 
 Follow these steps to quickly get started with either the [Python](https://github.com/prof79/fansly-downloader-ng#python-version-requirements) or the [Executable](https://github.com/prof79/fansly-downloader-ng/releases/latest):

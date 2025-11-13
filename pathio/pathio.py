@@ -58,8 +58,8 @@ def set_create_directory_for_download(config: FanslyConfig, state: DownloadState
             suffix = '_fansly'
 
         user_base_path = config.download_directory / f'{state.creator_name}{suffix}'
-        
-        user_base_path.mkdir(exist_ok=True)
+
+        user_base_path.mkdir(parents=True, exist_ok=True)
 
         # Default directory if download types don't match in check below
         download_directory = user_base_path
@@ -81,7 +81,7 @@ def set_create_directory_for_download(config: FanslyConfig, state: DownloadState
         state.download_path = download_directory
 
         # Create the directory
-        download_directory.mkdir(exist_ok=True)
+        download_directory.mkdir(parents=True, exist_ok=True)
 
         return download_directory
 

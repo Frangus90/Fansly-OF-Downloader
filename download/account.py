@@ -86,7 +86,9 @@ def get_creator_account_info(config: FanslyConfig, state: DownloadState) -> None
         state.total_timeline_videos = account['timelineStats']['videoCount']
 
         # overwrite base dup threshold with custom 20% of total timeline content
-        config.DUPLICATE_THRESHOLD = int(0.2 * int(state.total_timeline_pictures + state.total_timeline_videos))
+        # Cap at 150 to prevent excessive API calls on large libraries
+        calculated_threshold = int(0.2 * int(state.total_timeline_pictures + state.total_timeline_videos))
+        config.DUPLICATE_THRESHOLD = min(calculated_threshold, 150)
 
         # timeline & messages will always use the creator name from config.ini, so we'll leave this here
         print_info(f"Targeted creator: '{state.creator_name}'")

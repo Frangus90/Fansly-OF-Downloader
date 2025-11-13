@@ -84,8 +84,8 @@ def input_enter_close(interactive: bool) -> None:
         input('\nPress <ENTER> to close ...')
 
     else:
-        print('\nExiting in 15 seconds ...')
-        sleep(15)
+        print('\nExiting in 3 seconds ...')
+        sleep(3)
 
     sys.exit()
 
@@ -97,8 +97,8 @@ def input_enter_continue(interactive: bool) -> None:
     if interactive:
         input('\nPress <ENTER> to attempt to continue ...')
     else:
-        print('\nContinuing in 15 seconds ...')
-        sleep(15)
+        print('\nContinuing in 3 seconds ...')
+        sleep(3)
 
 
 # clear the terminal based on the operating system

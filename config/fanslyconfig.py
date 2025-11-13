@@ -4,7 +4,8 @@
 from configparser import ConfigParser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
+import threading
 
 from config.modes import DownloadMode
 from config.metadatahandling import MetadataHandling
@@ -23,7 +24,8 @@ class FanslyConfig(object):
     program_version: str
 
     # Define base threshold (used for when modules don't provide vars)
-    DUPLICATE_THRESHOLD: int = 50
+    # Increased from 50 to 150 to prevent premature exit on large creator libraries
+    DUPLICATE_THRESHOLD: int = 150
 
     # Batch size for batched API access (Fansly API size limit)
     BATCH_SIZE: int = 150
@@ -43,12 +45,22 @@ class FanslyConfig(object):
     _parser = ConfigParser(interpolation=None)
     _api: Optional[FanslyApi] = None
 
+    # GUI support
+    gui_mode: bool = False
+    progress_callback: Optional[Callable] = None
+    log_callback: Optional[Callable] = None
+    stop_flag: Optional[threading.Event] = None
+
     #endregion File-Independent
 
     #region config.ini Fields
 
     # TargetedCreator > username
     user_names: Optional[set[str]] = None
+    # GUI-only: tracks which creators are selected for download
+    selected_user_names: Optional[set[str]] = None
+    # GUI-only: the specific creator currently being downloaded (runtime only, not saved)
+    current_download_creator: Optional[str] = None
 
     # MyAccount
     token: Optional[str] = None
@@ -79,9 +91,11 @@ class FanslyConfig(object):
     prompt_on_exit: bool = True
 
     # Number of retries to get a timeline
-    timeline_retries: int = 1
+    # Increased from 1 to 3 for better reliability with flaky APIs
+    timeline_retries: int = 3
     # Anti-rate-limiting delay in seconds
-    timeline_delay_seconds: int = 60
+    # Reduced from 60 to 45 since exponential backoff is now implemented
+    timeline_delay_seconds: int = 45
 
     # Cache
     cached_device_id: Optional[str] = None

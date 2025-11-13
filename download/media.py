@@ -16,7 +16,7 @@ from errors import ApiError, DownloadError, DuplicateCountError, M3U8Error, Medi
 from fileio.dedupe import dedupe_media_file
 from media import MediaItem
 from pathio import set_create_directory_for_download
-from textio import print_info, print_warning
+from textio import print_info, print_warning, print_error
 from utils.common import batch_list
 
 
@@ -30,33 +30,79 @@ def download_media_infos(
     for ids in batch_list(media_ids, config.BATCH_SIZE):
         media_ids_str = ','.join(ids)
 
-        media_info_response = config.get_api() \
-            .get_account_media(media_ids_str)
+        # Retry logic for rate limiting and server errors
+        max_retries = 3
+        attempts = 0
+        success = False
 
-        media_info_response.raise_for_status()
+        while attempts < max_retries and not success:
+            media_info_response = config.get_api() \
+                .get_account_media(media_ids_str)
 
-        if media_info_response.status_code == 200:
-            media_info = media_info_response.json()
+            # Check for rate limiting FIRST (HTTP 429)
+            if media_info_response.status_code == 429:
+                attempts += 1
+                if attempts < max_retries:
+                    # Try to get Retry-After header, otherwise use configured delay
+                    retry_after = int(media_info_response.headers.get('Retry-After', config.timeline_delay_seconds))
+                    print_warning(
+                        f"Rate limited (HTTP 429) on media info fetch! "
+                        f"Waiting {retry_after}s before retry attempt {attempts}/{max_retries}..."
+                    )
+                    sleep(retry_after)
+                    continue  # Retry same batch
+                else:
+                    print_error(f"Rate limit exceeded maximum retries ({max_retries}) for media info batch.")
+                    raise DownloadError(
+                        f"Could not retrieve media info for {media_ids_str} due to rate limiting "
+                        f"after {max_retries} attempts"
+                    )
 
-            if not media_info['success']:
-                raise ApiError(
+            # Check for server errors (500-599)
+            elif 500 <= media_info_response.status_code < 600:
+                attempts += 1
+                if attempts < max_retries:
+                    backoff_delay = config.timeline_delay_seconds * (2 ** attempts)
+                    backoff_delay = min(backoff_delay, 300)  # Cap at 5 minutes
+                    print_warning(
+                        f"Server error {media_info_response.status_code} on media info fetch. "
+                        f"Retrying in {backoff_delay}s (attempt {attempts}/{max_retries})..."
+                    )
+                    sleep(backoff_delay)
+                    continue  # Retry same batch
+                else:
+                    print_error(f"Server error exceeded maximum retries ({max_retries}) for media info batch.")
+                    raise DownloadError(
+                        f"Could not retrieve media info for {media_ids_str} due to server error "
+                        f"{media_info_response.status_code} after {max_retries} attempts"
+                    )
+
+            # Success case
+            elif media_info_response.status_code == 200:
+                media_info = media_info_response.json()
+
+                if not media_info['success']:
+                    raise ApiError(
+                        f"Could not retrieve media info for {media_ids_str} due to an "
+                        f"API error - unsuccessful "
+                        f"| content: \n{media_info}"
+                    )
+
+                for info in media_info['response']:
+                    media_infos.append(info)
+
+                success = True  # Exit retry loop
+
+            # Other client errors (4xx)
+            else:
+                raise DownloadError(
                     f"Could not retrieve media info for {media_ids_str} due to an "
-                    f"API error - unsuccessful "
-                    f"| content: \n{media_info}"
+                    f"error --> status_code: {media_info_response.status_code} "
+                    f"| content: \n{media_info_response.content.decode('utf-8')}"
                 )
 
-            for info in media_info['response']:
-                media_infos.append(info)
-
-        else:
-            raise DownloadError(
-                f"Could not retrieve media info for {media_ids_str} due to an "
-                f"error --> status_code: {media_info_response.status_code} "
-                f"| content: \n{media_info_response.content.decode('utf-8')}"
-            )
-
-        # Slow down a bit to be sure
-        sleep(random.uniform(0.4, 0.75))
+        # Small delay between API calls to avoid rate limiting
+        sleep(random.uniform(0.2, 0.4))
 
     return media_infos
 
@@ -67,7 +113,23 @@ def download_media(config: FanslyConfig, state: DownloadState, accessible_media:
         raise RuntimeError('Internal error during media download - download type not set on state.')
 
     # loop through the accessible_media and download the media files
-    for media_item in accessible_media:
+    for index, media_item in enumerate(accessible_media):
+        # Check if stop requested (GUI)
+        if config.stop_flag and config.stop_flag.is_set():
+            print_info("Media download stopped by user")
+            return
+
+        # Send progress update for current file (GUI)
+        if config.gui_mode and config.progress_callback:
+            config.progress_callback({
+                'type': 'media',
+                'current': index + 1,
+                'total': len(accessible_media),
+                'current_file': media_item.get_file_name() if media_item else '',
+                'status': 'running',
+                'duplicates': state.duplicate_count,
+                'downloaded': state.pic_count + state.vid_count
+            })
         # Verify that the duplicate count has not drastically spiked and
         # and if it did verify that the spiked amount is significantly
         # high to cancel scraping
@@ -212,5 +274,5 @@ def download_media(config: FanslyConfig, state: DownloadState, accessible_media:
         except M3U8Error as ex:
             print_warning(f'Skipping invalid item: {ex}')
 
-        # Slow down a bit to be sure
-        sleep(random.uniform(0.4, 0.75))
+        # Small delay between API calls to avoid rate limiting
+        sleep(random.uniform(0.2, 0.4))

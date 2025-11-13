@@ -11,6 +11,7 @@ import ssl
 
 from datetime import datetime, timezone
 from requests import Response
+from time import sleep
 from typing import Any, Callable, Optional
 from urllib.parse import urlparse, parse_qs
 from websockets import client as ws_client
@@ -266,9 +267,74 @@ class FanslyApi(object):
         )
 
 
+    def get_timeline_with_retry(
+                self,
+                creator_id: str,
+                timeline_cursor: str,
+                max_retries: int = 3
+            ) -> Response:
+        """Get timeline with automatic retry on transient failures.
+
+        This wrapper provides resilience against temporary network issues,
+        server errors, and connection problems. It does NOT retry on
+        rate limits (429) or client errors (4xx), as those should be
+        handled by the caller.
+
+        :param creator_id: The creator's account ID
+        :param timeline_cursor: The timeline cursor position
+        :param max_retries: Maximum number of retry attempts (default: 3)
+        :return: The HTTP response object
+        :raises: RequestException if all retries are exhausted
+        """
+        last_exception = None
+
+        for attempt in range(max_retries):
+            try:
+                response = self.get_timeline(creator_id, timeline_cursor)
+
+                # Return immediately for these status codes (let caller handle):
+                # - 200 (success)
+                # - 429 (rate limit - caller should handle with proper delays)
+                # - 404 (not found - no point retrying)
+                # - 4xx (client errors - retrying won't help)
+                if response.status_code == 200 \
+                        or response.status_code == 429 \
+                        or response.status_code == 404 \
+                        or (400 <= response.status_code < 500):
+                    return response
+
+                # Retry on server errors (500-599)
+                if 500 <= response.status_code < 600:
+                    if attempt < max_retries - 1:
+                        # Exponential backoff: 2^attempt seconds
+                        backoff = 2 ** attempt
+                        sleep(backoff)
+                        continue
+
+                # For any other status, return for caller to handle
+                return response
+
+            except requests.exceptions.RequestException as e:
+                # Network errors, connection timeouts, etc.
+                last_exception = e
+
+                if attempt < max_retries - 1:
+                    # Exponential backoff with jitter
+                    backoff = (2 ** attempt) + random.uniform(0, 1)
+                    sleep(backoff)
+                    continue
+                else:
+                    # All retries exhausted, re-raise the last exception
+                    raise
+
+        # If we get here, all retries for 5xx errors were exhausted
+        # Return the last response (which will be 5xx)
+        return response
+
+
     def get_group(self) -> Response:
         return self.get_with_ngsw(
-            url='https://apiv3.fansly.com/api/v1/group',
+            url='https://apiv3.fansly.com/api/v1/messaging/groups',
         )
 
 

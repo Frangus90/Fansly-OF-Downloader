@@ -82,6 +82,9 @@ target/
 profile_default/
 ipython_config.py
 
+# Claude Code files
+claude.md
+
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
 #   intended to run in multiple environments; otherwise, check them in:
@@ -170,7 +173,43 @@ config.ini
 *.bak
 logo*.txt
 dummy.*
+
 # Linux/macOS binary
 fansly-downloader-ng
 # Test scripts
 api_tester.py
+
+# ===================================================================
+# FANSLY DOWNLOADER NG - PERSONAL/SENSITIVE DATA
+# ===================================================================
+
+# Config files with authentication tokens and personal settings
+config.ini
+config.ini.backup
+*.ini.bak
+
+# GUI application state (contains creator usernames)
+gui_state.json
+
+# Application logs (may contain personal paths, tokens, creator names)
+fansly_downloader.log
+fansly_downloader*.log
+
+# ===================================================================
+# BUILD ARTIFACTS
+# ===================================================================
+
+# PyInstaller build outputs
+release/
+
+# Downloaded media content
+Downloads/
+
+# ===================================================================
+# DEVELOPMENT/TESTING FILES
+# ===================================================================
+
+# Personal development notes
+EXE_TESTING_NOTES.md
+*_TESTING_NOTES.md
+*_NOTES.md

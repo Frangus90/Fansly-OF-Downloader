@@ -20,12 +20,25 @@ def download_messages(config: FanslyConfig, state: DownloadState):
 
     print_info(f"Initiating Messages procedure. Standby for results.")
     print()
+
+    # GUI progress callback helper
+    def send_progress(current, total, filename=''):
+        if config.gui_mode and config.progress_callback:
+            config.progress_callback({
+                'type': 'messages',
+                'current': current,
+                'total': total,
+                'current_file': filename,
+                'status': 'running',
+                'duplicates': state.duplicate_count,
+                'downloaded': state.pic_count + state.vid_count
+            })
     
     groups_response = config.get_api() \
         .get_group()
 
     if groups_response.status_code == 200:
-        groups_response = groups_response.json()['response']['groups']
+        groups_response = groups_response.json()['response']['aggregationData']['groups']
 
         # go through messages and check if we even have a chat history with the creator
         group_id = None
@@ -45,6 +58,11 @@ def download_messages(config: FanslyConfig, state: DownloadState):
             msg_cursor: str = '0'
 
             while True:
+                # Check if stop requested (GUI)
+                if config.stop_flag and config.stop_flag.is_set():
+                    print_info("Messages download stopped by user")
+                    return
+
                 starting_duplicates = state.duplicate_count
 
                 params = {'groupId': group_id, 'limit': '25', 'ngsw-bypass': 'true'}
@@ -65,6 +83,13 @@ def download_messages(config: FanslyConfig, state: DownloadState):
 
                     process_download_accessible_media(config, state, media_infos)
 
+                    # Send progress update
+                    send_progress(
+                        state.pic_count + state.vid_count,
+                        state.total_message_items,
+                        f"Processing messages batch"
+                    )
+
                     # Print info on skipped downloads if `show_skipped_downloads` is enabled
                     skipped_downloads = state.duplicate_count - starting_duplicates
                     if skipped_downloads > 1 and config.show_downloads and not config.show_skipped_downloads:
@@ -77,8 +102,8 @@ def download_messages(config: FanslyConfig, state: DownloadState):
                     # get next cursor
                     try:
                         # Fansly rate-limiting fix
-                        # (don't know if messages were affected at all)
-                        sleep(random.uniform(2, 4))
+                        # Reduced to 1-2s since we now have proper 429 rate limit detection
+                        sleep(random.uniform(1, 2))
                         msg_cursor = messages['messages'][-1]['id']
 
                     except IndexError:

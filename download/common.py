@@ -138,8 +138,10 @@ def process_download_accessible_media(
         state.total_message_items += len(accessible_media)
 
         # Overwrite base dup threshold with 20% of total accessible content in messages.
+        # Cap at 150 to prevent excessive API calls on large message libraries.
         # Don't forget to save/reset afterwards.
-        config.DUPLICATE_THRESHOLD = int(0.2 * state.total_message_items)
+        calculated_threshold = int(0.2 * state.total_message_items)
+        config.DUPLICATE_THRESHOLD = min(calculated_threshold, 150)
 
     # at this point we have already parsed the whole post object and determined what is scrapable with the code above
     print_info(f"@{state.creator_name} - amount of media in {state.download_type_str()}: {len(media_infos)} (scrapable: {len(accessible_media)})")

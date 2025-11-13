@@ -12,7 +12,21 @@ import re
 # import errors
 
 from pathlib import Path
-from pkg_resources._vendor.packaging.version import parse as parse_version
+
+# Use the public API instead of internal _vendor API
+# This avoids deprecation warnings and import errors
+try:
+    from packaging.version import parse as parse_version
+except ImportError:
+    # Fallback to pkg_resources if packaging is not installed
+    try:
+        from pkg_resources import parse_version
+    except ImportError:
+        # Last resort: use a simple string comparison
+        def parse_version(version_string):
+            """Simple fallback version parser."""
+            return tuple(map(int, version_string.split('.')))
+
 # from shutil import unpack_archive
 
 from config import FanslyConfig
