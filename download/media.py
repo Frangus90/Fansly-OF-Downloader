@@ -276,12 +276,12 @@ def download_media(config: FanslyConfig, state: DownloadState, accessible_media:
 
             is_dupe = dedupe_media_file(config, state, media_item.mimetype, file_save_path)
 
-            # Delay between downloads to avoid rate limiting
-            sleep(0.5)
-
             # Is it a duplicate?
             if is_dupe:
                 continue
+
+            # Delay between downloads to avoid rate limiting
+            sleep(0.5)
 
             # We only count them if the file was actually kept
             state.pic_count += 1 if 'image' in media_item.mimetype else 0
@@ -290,5 +290,5 @@ def download_media(config: FanslyConfig, state: DownloadState, accessible_media:
         except M3U8Error as ex:
             print_warning(f'Skipping invalid item: {ex}')
 
-        # Delay between API calls to avoid rate limiting
+        # Delay between file downloads to avoid rate limiting
         sleep(1.0)

@@ -76,9 +76,15 @@ def download_collections(config: FanslyConfig, state: DownloadState):
 
 
     else:
-        print_error(
-            f"Collections download failed. Response code: "
-            f"{collections_response.status_code}\n{collections_response.text}",
-            23
-        )
+        if collections_response:
+            print_error(
+                f"Collections download failed. Response code: "
+                f"{collections_response.status_code}\n{collections_response.text}",
+                23
+            )
+        else:
+            print_error(
+                f"Collections download failed after {config.timeline_retries} rate limit retries.",
+                23
+            )
         input_enter_continue(config.interactive)

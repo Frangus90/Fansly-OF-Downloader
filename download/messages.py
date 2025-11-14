@@ -125,11 +125,17 @@ def download_messages(config: FanslyConfig, state: DownloadState):
                         break # break if end is reached
 
                 else:
-                    print_error(
-                        f"Failed messages download. messages_req failed with response code: "
-                        f"{messages_response.status_code}\n{messages_response.text}", 
-                        30
-                    )
+                    if messages_response:
+                        print_error(
+                            f"Failed messages download. messages_req failed with response code: "
+                            f"{messages_response.status_code}\n{messages_response.text}",
+                            30
+                        )
+                    else:
+                        print_error(
+                            f"Failed messages download after {config.timeline_retries} rate limit retries.",
+                            30
+                        )
 
         elif group_id is None:
             print_warning(

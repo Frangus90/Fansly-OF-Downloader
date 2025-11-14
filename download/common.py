@@ -13,7 +13,7 @@ from config import FanslyConfig
 from errors import DuplicateCountError, ApiError
 from media import MediaItem, parse_media_info
 from pathio import set_create_directory_for_download
-from textio import print_error, print_info, print_warning, input_enter_continue
+from textio import print_error, print_info, print_warning, print_debug, input_enter_continue
 
 
 def get_unique_media_ids(info_object: dict[str, Any]) -> list[str]:
@@ -133,8 +133,10 @@ def process_download_accessible_media(
 
     # Log filtered out items
     filtered_count = len(media_items) - len(accessible_media)
-    if filtered_count > 0:
+    if filtered_count > 5:
         print_warning(f"Filtered out {filtered_count} media items (no download URL - likely locked/paid content)")
+    elif filtered_count > 0 and config.debug:
+        print_debug(f"Filtered out {filtered_count} media items (no download URL)")
 
     # Special messages handling
     original_duplicate_threshold = config.DUPLICATE_THRESHOLD
