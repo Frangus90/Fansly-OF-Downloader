@@ -1,12 +1,14 @@
 """Download Fansly Collections"""
 
 
+from time import sleep
+
 from .common import process_download_accessible_media
 from .downloadstate import DownloadState
 from .types import DownloadType
 
 from config import FanslyConfig
-from textio import input_enter_continue, print_error, print_info
+from textio import input_enter_continue, print_error, print_info, print_warning
 from utils.common import batch_list
 
 
@@ -19,10 +21,24 @@ def download_collections(config: FanslyConfig, state: DownloadState):
     state.download_type = DownloadType.COLLECTIONS
 
     # send a first request to get all available "accountMediaId" ids, which are basically media ids of every graphic listed on /collections
-    collections_response = config.get_api() \
-        .get_media_collections()
+    attempts = 0
+    collections_response = None
 
-    if collections_response.status_code == 200:
+    while attempts < config.timeline_retries:
+        collections_response = config.get_api() \
+            .get_media_collections()
+
+        if collections_response.status_code == 429:
+            retry_after = int(collections_response.headers.get('Retry-After', config.timeline_delay_seconds))
+            print_warning(f"Rate limited (HTTP 429) on collections! Waiting {retry_after}s before retry...")
+            sleep(retry_after)
+            attempts += 1
+            continue
+
+        # Success or other error - break out
+        break
+
+    if collections_response and collections_response.status_code == 200:
         collections = collections_response.json()
         account_media_orders = collections['response']['accountMediaOrders']
         account_media_ids = [order['accountMediaId'] for order in account_media_orders]
@@ -49,6 +65,9 @@ def download_collections(config: FanslyConfig, state: DownloadState):
                     23
                 )
                 input_enter_continue(config.interactive)
+
+            # Delay between collection batches to avoid rate limiting
+            sleep(1.0)
 
         if state.duplicate_count > 0 and config.show_downloads and not config.show_skipped_downloads:
             print_info(

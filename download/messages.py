@@ -70,10 +70,25 @@ def download_messages(config: FanslyConfig, state: DownloadState):
                 if msg_cursor != '0':
                     params['before'] = msg_cursor
 
-                messages_response = config.get_api() \
-                    .get_message(params)
+                # Retry loop for rate limiting
+                msg_attempts = 0
+                messages_response = None
 
-                if messages_response.status_code == 200:
+                while msg_attempts < config.timeline_retries:
+                    messages_response = config.get_api() \
+                        .get_message(params)
+
+                    if messages_response.status_code == 429:
+                        retry_after = int(messages_response.headers.get('Retry-After', config.timeline_delay_seconds))
+                        print_warning(f"Rate limited (HTTP 429) on messages! Waiting {retry_after}s before retry...")
+                        sleep(retry_after)
+                        msg_attempts += 1
+                        continue
+
+                    # Success or other error - break out
+                    break
+
+                if messages_response and messages_response.status_code == 200:
                 
                     # Object contains: messages, accountMedia, accountMediaBundles, tips, tipGoals, stories
                     messages = messages_response.json()['response']

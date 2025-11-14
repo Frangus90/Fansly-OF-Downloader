@@ -93,7 +93,8 @@ def download_timeline(config: FanslyConfig, state: DownloadState) -> None:
                     attempts += 1
                     continue  # Retry same cursor
                 else:
-                    print_error(f"Rate limit exceeded maximum retries ({config.timeline_retries}). Stopping timeline download.")
+                    print_warning(f"Rate limit exceeded maximum retries ({config.timeline_retries}) at cursor {timeline_cursor}. Stopping timeline download.")
+                    print_info("This may be temporary. Try running again later to continue from where you left off.")
                     break
 
             # Check for server errors (500-599)

@@ -131,6 +131,11 @@ def process_download_accessible_media(
                     or not item.is_preview)
     ]
 
+    # Log filtered out items
+    filtered_count = len(media_items) - len(accessible_media)
+    if filtered_count > 0:
+        print_warning(f"Filtered out {filtered_count} media items (no download URL - likely locked/paid content)")
+
     # Special messages handling
     original_duplicate_threshold = config.DUPLICATE_THRESHOLD
 

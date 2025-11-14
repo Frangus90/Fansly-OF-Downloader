@@ -101,8 +101,8 @@ def download_media_infos(
                     f"| content: \n{media_info_response.content.decode('utf-8')}"
                 )
 
-        # Small delay between API calls to avoid rate limiting
-        sleep(random.uniform(0.2, 0.4))
+        # Delay between API calls to avoid rate limiting
+        sleep(1.0)
 
     return media_infos
 
@@ -205,14 +205,27 @@ def download_media(config: FanslyConfig, state: DownloadState, accessible_media:
             print_info(f"Downloading {media_item.mimetype.split('/')[-2]} '{filename}'")
 
         try:
-
             if media_item.file_extension == 'm3u8':
-                # handle the download of a m3u8 file
-                file_save_path = download_m3u8(
-                    config,
-                    m3u8_url=media_item.download_url,
-                    save_path=file_save_path
-                )
+                # handle the download of a m3u8 file with retry logic
+                m3u8_retry_count = 0
+                m3u8_success = False
+
+                while m3u8_retry_count < 3 and not m3u8_success:
+                    try:
+                        file_save_path = download_m3u8(
+                            config,
+                            m3u8_url=media_item.download_url,
+                            save_path=file_save_path
+                        )
+                        m3u8_success = True
+                    except M3U8Error as ex:
+                        m3u8_retry_count += 1
+                        if m3u8_retry_count < 3:
+                            print_warning(f'M3U8 download failed (attempt {m3u8_retry_count}/3): {ex}. Retrying in 2s...')
+                            sleep(2)
+                        else:
+                            # Re-raise to be caught by outer exception handler
+                            raise
 
             else:
                 # handle the download of a normal media file
@@ -263,6 +276,9 @@ def download_media(config: FanslyConfig, state: DownloadState, accessible_media:
 
             is_dupe = dedupe_media_file(config, state, media_item.mimetype, file_save_path)
 
+            # Delay between downloads to avoid rate limiting
+            sleep(0.5)
+
             # Is it a duplicate?
             if is_dupe:
                 continue
@@ -274,5 +290,5 @@ def download_media(config: FanslyConfig, state: DownloadState, accessible_media:
         except M3U8Error as ex:
             print_warning(f'Skipping invalid item: {ex}')
 
-        # Small delay between API calls to avoid rate limiting
-        sleep(random.uniform(0.2, 0.4))
+        # Delay between API calls to avoid rate limiting
+        sleep(1.0)
