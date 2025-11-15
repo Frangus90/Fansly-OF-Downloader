@@ -4,10 +4,12 @@
 import random
 import traceback
 
+from pathlib import Path
 from requests import Response
 from time import sleep
 
 from .common import get_unique_media_ids, process_download_accessible_media
+from .state_manager import DownloadStateManager
 from .downloadstate import DownloadState
 from .media import download_media_infos
 from .types import DownloadType
@@ -53,6 +55,30 @@ def download_timeline(config: FanslyConfig, state: DownloadState) -> None:
                 'downloaded': state.pic_count + state.vid_count
             })
 
+    # Initialize state manager for incremental downloads
+    state_file = Path(config.download_directory) / "download_history.json"
+    state_manager = DownloadStateManager(state_file)
+
+    # Check for incremental mode
+    after_cursor = '0'
+    if config.incremental_mode:
+        saved_cursor = state_manager.get_last_cursor(state.creator_name, "timeline")
+        if saved_cursor:
+            after_cursor = saved_cursor
+            last_update = state_manager.get_last_update_time(state.creator_name, "timeline")
+            if last_update:
+                from datetime import datetime
+                last_update_str = datetime.fromtimestamp(last_update).strftime('%Y-%m-%d %H:%M:%S')
+                print_info(f"Incremental mode: Checking for content newer than {last_update_str}")
+            else:
+                print_info(f"Incremental mode: Checking for new content")
+        else:
+            print_info(f"Incremental mode enabled but no previous download found. Performing full download.")
+
+    # Track for state update
+    session_new_items = 0
+    most_recent_cursor = None
+
     # this has to be up here so it doesn't get looped
     timeline_cursor = 0
     attempts = 0
@@ -81,7 +107,7 @@ def download_timeline(config: FanslyConfig, state: DownloadState) -> None:
                 raise RuntimeError('Creator name or timeline cursor should not be None')
 
             timeline_response = config.get_api() \
-                .get_timeline(state.creator_id, str(timeline_cursor))
+                .get_timeline(state.creator_id, str(timeline_cursor), after_cursor)
 
             # Check for rate limiting FIRST (HTTP 429)
             if timeline_response.status_code == 429:
@@ -163,6 +189,12 @@ def download_timeline(config: FanslyConfig, state: DownloadState) -> None:
                     f"Processing timeline batch"
                 )
 
+                # Track for state update
+                if most_recent_cursor is None and 'posts' in timeline and len(timeline['posts']) > 0:
+                    most_recent_cursor = timeline['posts'][0]['id']
+
+                session_new_items += len(all_media_ids)
+
                 if not process_download_accessible_media(config, state, media_infos):
                     # Break on deduplication error - already downloaded
                     break
@@ -213,6 +245,19 @@ def download_timeline(config: FanslyConfig, state: DownloadState) -> None:
                         f'\n{traceback.format_exc()}\n'
 
                     raise ApiError(message)
+
+            # Save state if incremental mode and we got new content
+            if config.incremental_mode and most_recent_cursor and session_new_items > 0:
+                state_manager.update_cursor(
+                    state.creator_name,
+                    state.creator_id,
+                    "timeline",
+                    most_recent_cursor,
+                    session_new_items
+                )
+                print_info(f"Incremental: Saved progress ({session_new_items} new items)")
+            elif config.incremental_mode and session_new_items == 0:
+                print_info("Incremental: No new content found")
 
         except KeyError:
             print_error("Couldn't find any scrapable media at all!\

@@ -253,10 +253,17 @@ class FanslyApi(object):
         )
 
 
-    def get_timeline(self, creator_id: str, timeline_cursor: str) -> Response:
+    def get_timeline(self, creator_id: str, timeline_cursor: str, after_cursor: str = '0') -> Response:
+        """Fetch timeline posts.
+
+        Args:
+            creator_id: The creator's ID
+            timeline_cursor: Fetch posts before this post ID (pagination)
+            after_cursor: Fetch only posts after this post ID (incremental mode)
+        """
         custom_params = {
             'before': timeline_cursor,
-            'after': '0',
+            'after': after_cursor,
             'wallId': '',
             'contentSearch': '',
         }
@@ -338,7 +345,17 @@ class FanslyApi(object):
         )
 
 
-    def get_message(self, params: dict[str, str]) -> Response:
+    def get_message(self, params: dict[str, str], after_cursor: str = None) -> Response:
+        """Fetch messages.
+
+        Args:
+            params: Dict with groupId, limit, ngsw-bypass, and optionally 'before'
+            after_cursor: Optional message ID to fetch only newer messages (incremental mode)
+        """
+        if after_cursor:
+            params = params.copy()
+            params['after'] = after_cursor
+
         return self.get_with_ngsw(
             url='https://apiv3.fansly.com/api/v1/message',
             params=params,

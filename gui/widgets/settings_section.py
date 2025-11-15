@@ -83,6 +83,15 @@ class SettingsSection(ctk.CTkFrame):
         )
         self.open_folder_check.pack(anchor="w", pady=2)
 
+        # Incremental mode toggle
+        self.incremental_var = ctk.BooleanVar(value=False)
+        self.incremental_check = ctk.CTkCheckBox(
+            options_frame,
+            text="Incremental mode (download only new content since last run)",
+            variable=self.incremental_var,
+        )
+        self.incremental_check.pack(anchor="w", pady=2)
+
         # Configure grid weights
         self.grid_columnconfigure(1, weight=1)
 
@@ -122,6 +131,9 @@ class SettingsSection(ctk.CTkFrame):
         if hasattr(self.config, 'open_folder_when_finished'):
             self.open_folder_var.set(self.config.open_folder_when_finished)
 
+        if hasattr(self.config, 'incremental_mode'):
+            self.incremental_var.set(self.config.incremental_mode)
+
     def save_to_config(self, config):
         """Save values to config"""
         # Download mode
@@ -145,6 +157,7 @@ class SettingsSection(ctk.CTkFrame):
         config.download_media_previews = self.preview_var.get()
         config.separate_previews = self.separate_preview_var.get()
         config.open_folder_when_finished = self.open_folder_var.get()
+        config.incremental_mode = self.incremental_var.get()
 
     def validate(self):
         """Validate settings"""

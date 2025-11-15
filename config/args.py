@@ -268,6 +268,14 @@ def parse_args() -> argparse.Namespace:
             "(without download time and extra retries) will last at minimum: "
             "NUMBER_OF_CREATORS * TIMELINE_RETRIES * TIMELINE_DELAY_SECONDS",
     )
+    parser.add_argument(
+        '-i', '--incremental',
+        action='store_true',
+        default=False,
+        dest='incremental_mode',
+        help="Download only new content since last run (incremental mode). "
+            "Saves download position and resumes on next run. Default: False"
+    )
 
     #endregion Other Options
 

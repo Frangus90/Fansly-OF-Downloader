@@ -3,9 +3,11 @@
 
 import random
 
+from pathlib import Path
 from time import sleep
 
 from .common import get_unique_media_ids, process_download_accessible_media
+from .state_manager import DownloadStateManager
 from .downloadstate import DownloadState
 from .media import download_media_infos
 from .types import DownloadType
@@ -33,7 +35,29 @@ def download_messages(config: FanslyConfig, state: DownloadState):
                 'duplicates': state.duplicate_count,
                 'downloaded': state.pic_count + state.vid_count
             })
-    
+
+    # Initialize state manager for incremental downloads
+    state_file = Path(config.download_directory) / "download_history.json"
+    state_manager = DownloadStateManager(state_file)
+
+    # Check for incremental mode
+    after_cursor = None
+    if config.incremental_mode:
+        saved_cursor = state_manager.get_last_cursor(state.creator_name, "messages")
+        if saved_cursor:
+            after_cursor = saved_cursor
+            last_update = state_manager.get_last_update_time(state.creator_name, "messages")
+            if last_update:
+                from datetime import datetime
+                last_update_str = datetime.fromtimestamp(last_update).strftime('%Y-%m-%d %H:%M:%S')
+                print_info(f"Incremental mode: Checking for messages newer than {last_update_str}")
+        else:
+            print_info(f"Incremental mode enabled but no previous messages download found.")
+
+    # Track for state update
+    session_new_items = 0
+    most_recent_cursor = None
+
     groups_response = config.get_api() \
         .get_group()
 
@@ -76,7 +100,7 @@ def download_messages(config: FanslyConfig, state: DownloadState):
 
                 while msg_attempts < config.timeline_retries:
                     messages_response = config.get_api() \
-                        .get_message(params)
+                        .get_message(params, after_cursor)
 
                     if messages_response.status_code == 429:
                         retry_after = int(messages_response.headers.get('Retry-After', config.timeline_delay_seconds))
@@ -136,6 +160,19 @@ def download_messages(config: FanslyConfig, state: DownloadState):
                             f"Failed messages download after {config.timeline_retries} rate limit retries.",
                             30
                         )
+
+            # Save state if incremental mode
+            if config.incremental_mode and most_recent_cursor and session_new_items > 0:
+                state_manager.update_cursor(
+                    state.creator_name,
+                    state.creator_id,
+                    "messages",
+                    most_recent_cursor,
+                    session_new_items
+                )
+                print_info(f"Incremental: Saved progress ({session_new_items} new messages)")
+            elif config.incremental_mode and session_new_items == 0:
+                print_info("Incremental: No new messages found")
 
         elif group_id is None:
             print_warning(

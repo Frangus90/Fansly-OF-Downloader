@@ -97,6 +97,9 @@ class FanslyConfig(object):
     # Reduced from 60 to 45 since exponential backoff is now implemented
     timeline_delay_seconds: int = 45
 
+    # Incremental download mode - only download new content since last run
+    incremental_mode: bool = False
+
     # Cache
     cached_device_id: Optional[str] = None
     cached_device_id_timestamp: Optional[int] = None
@@ -196,6 +199,7 @@ class FanslyConfig(object):
         self._parser.set('Options', 'use_folder_suffix', str(self.use_folder_suffix))
         self._parser.set('Options', 'interactive', str(self.interactive))
         self._parser.set('Options', 'prompt_on_exit', str(self.prompt_on_exit))
+        self._parser.set('Options', 'incremental_mode', str(self.incremental_mode))
 
         # Unsigned ints
         self._parser.set('Options', 'timeline_retries', str(self.timeline_retries))
