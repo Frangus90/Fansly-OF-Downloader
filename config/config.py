@@ -14,9 +14,7 @@ from config.metadatahandling import MetadataHandling
 from config.modes import DownloadMode
 
 from errors import ConfigError
-from textio import print_info, print_config, print_warning
 from utils.common import save_config_or_raise
-from utils.web import open_url
 
 
 def parse_items_from_line(line: str) -> list[str]:
@@ -124,9 +122,11 @@ def copy_old_config_values():
 
 def load_config(config: FanslyConfig) -> None:
     """Loads the program configuration from file.
-    
+
     :param FanslyConfig config: The configuration object to fill.
     """
+    from textio import print_info, print_config, print_warning
+    from utils.web import open_url
 
     print_info('Reading config.ini file ...')
     print()

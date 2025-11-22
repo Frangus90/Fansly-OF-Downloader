@@ -3,6 +3,8 @@ Download settings widget
 """
 
 import customtkinter as ctk
+import platform
+import subprocess
 from tkinter import filedialog
 from pathlib import Path
 
@@ -54,7 +56,12 @@ class SettingsSection(ctk.CTkFrame):
         browse_btn = ctk.CTkButton(
             self, text="Browse...", command=self.browse_directory, width=100
         )
-        browse_btn.grid(row=2, column=2, padx=10, pady=5)
+        browse_btn.grid(row=2, column=2, padx=(10, 5), pady=5)
+
+        open_folder_btn = ctk.CTkButton(
+            self, text="Open Folder", command=self._open_download_folder, width=100
+        )
+        open_folder_btn.grid(row=2, column=3, padx=(0, 10), pady=5)
 
         # Options
         options_label = ctk.CTkLabel(self, text="Options:", anchor="w")
@@ -76,12 +83,6 @@ class SettingsSection(ctk.CTkFrame):
             variable=self.separate_preview_var,
         )
         self.separate_preview_check.pack(anchor="w", pady=2)
-
-        self.open_folder_var = ctk.BooleanVar(value=True)
-        self.open_folder_check = ctk.CTkCheckBox(
-            options_frame, text="Open folder when done", variable=self.open_folder_var
-        )
-        self.open_folder_check.pack(anchor="w", pady=2)
 
         # Incremental mode toggle
         self.incremental_var = ctk.BooleanVar(value=False)
@@ -105,6 +106,26 @@ class SettingsSection(ctk.CTkFrame):
             self.dir_entry.delete(0, "end")
             self.dir_entry.insert(0, directory)
 
+    def _open_download_folder(self):
+        """Open the current download directory in file explorer."""
+        path = self.dir_entry.get().strip()
+        if not path:
+            return
+
+        folder = Path(path)
+        if not folder.exists():
+            # Try to create it or just open parent
+            folder.mkdir(parents=True, exist_ok=True)
+
+        if folder.exists():
+            system = platform.system()
+            if system == "Windows":
+                subprocess.run(["explorer", str(folder)], check=False)
+            elif system == "Darwin":
+                subprocess.run(["open", str(folder)], check=False)
+            else:
+                subprocess.run(["xdg-open", str(folder)], check=False)
+
     def load_from_config(self):
         """Load values from config"""
         # Download mode
@@ -127,9 +148,6 @@ class SettingsSection(ctk.CTkFrame):
 
         if hasattr(self.config, 'separate_previews'):
             self.separate_preview_var.set(self.config.separate_previews)
-
-        if hasattr(self.config, 'open_folder_when_finished'):
-            self.open_folder_var.set(self.config.open_folder_when_finished)
 
         if hasattr(self.config, 'incremental_mode'):
             self.incremental_var.set(self.config.incremental_mode)
@@ -156,7 +174,6 @@ class SettingsSection(ctk.CTkFrame):
         # Options
         config.download_media_previews = self.preview_var.get()
         config.separate_previews = self.separate_preview_var.get()
-        config.open_folder_when_finished = self.open_folder_var.get()
         config.incremental_mode = self.incremental_var.get()
 
     def validate(self):

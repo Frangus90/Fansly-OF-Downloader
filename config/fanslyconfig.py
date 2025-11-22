@@ -4,13 +4,14 @@
 from configparser import ConfigParser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Callable
+from typing import TYPE_CHECKING, Optional, Callable
 import threading
 
 from config.modes import DownloadMode
 from config.metadatahandling import MetadataHandling
 
-from api import FanslyApi
+if TYPE_CHECKING:
+    from api import FanslyApi
 
 
 @dataclass
@@ -43,7 +44,7 @@ class FanslyConfig(object):
 
     # Objects
     _parser = ConfigParser(interpolation=None)
-    _api: Optional[FanslyApi] = None
+    _api: Optional['FanslyApi'] = None
 
     # GUI support
     gui_mode: bool = False
@@ -114,7 +115,9 @@ class FanslyConfig(object):
 
     #region Methods
 
-    def get_api(self) -> FanslyApi:
+    def get_api(self) -> 'FanslyApi':
+        from api import FanslyApi
+
         if self._api is None:
             token = self.get_unscrambled_token()
             user_agent = self.user_agent

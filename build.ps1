@@ -34,7 +34,7 @@ $iconPath = Join-Path 'resources' 'fansly_ng.ico'
 $fullScriptPath = Join-Path $PSScriptRoot 'fansly_downloader_ng.py'
 
 # Build
-pyinstaller `
+python -m PyInstaller `
     -n "$name" `
     --onefile `
     --console `

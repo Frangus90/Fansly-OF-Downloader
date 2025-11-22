@@ -25,6 +25,10 @@ def run_download(config, stop_flag, progress_callback, log_callback):
     config.log_callback = log_callback
     config.stop_flag = stop_flag
 
+    # Enable GUI log routing for textio messages
+    from textio import set_gui_config
+    set_gui_config(config)
+
     # Create download state for the creator
     # Use current_download_creator if set (GUI mode), otherwise first from user_names
     if config.current_download_creator:

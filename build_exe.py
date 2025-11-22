@@ -29,7 +29,7 @@ def build_exe():
             "--name=FanslyDownloaderNG",  # Exe name
             "--onefile",  # Single exe file
             "--windowed",  # No console window
-            "--icon=NONE",  # TODO: Add icon later
+            "--icon=resources/fansly_ng.ico",  # Application icon
             "--add-data=config.sample.ini;.",  # Include sample config
             "--hidden-import=customtkinter",  # Ensure CTk included
             "--hidden-import=PIL",  # Ensure Pillow included

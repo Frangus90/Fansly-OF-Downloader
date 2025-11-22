@@ -38,7 +38,6 @@ class SetupWizard(ctk.CTkToplevel):
             "download_dir": str(Path.cwd() / "Downloads"),
             "download_mode": "Normal",
             "download_previews": True,
-            "open_folder": True,
             "separate_timeline": True,
         }
 
@@ -272,12 +271,6 @@ class SetupWizard(ctk.CTkToplevel):
         )
         preview_check.pack(anchor="w", padx=40, pady=2)
 
-        self.open_folder_var = ctk.BooleanVar(value=True)
-        open_folder_check = ctk.CTkCheckBox(
-            page, text="Open folder when finished", variable=self.open_folder_var
-        )
-        open_folder_check.pack(anchor="w", padx=40, pady=2)
-
         self.separate_timeline_var = ctk.BooleanVar(value=True)
         separate_check = ctk.CTkCheckBox(
             page, text="Separate timeline folder", variable=self.separate_timeline_var
@@ -448,7 +441,6 @@ class SetupWizard(ctk.CTkToplevel):
         self.data["download_dir"] = self.dir_entry.get().strip()
         self.data["download_mode"] = self.mode_var.get()
         self.data["download_previews"] = self.preview_var.get()
-        self.data["open_folder"] = self.open_folder_var.get()
         self.data["separate_timeline"] = self.separate_timeline_var.get()
 
         # Show progress page
@@ -521,9 +513,7 @@ class SetupWizard(ctk.CTkToplevel):
                 "download_media_previews",
                 str(self.data["download_previews"]),
             )
-            config.set(
-                "Options", "open_folder_when_finished", str(self.data["open_folder"])
-            )
+            config.set("Options", "open_folder_when_finished", "False")
             config.set("Options", "separate_messages", "True")
             config.set("Options", "separate_previews", "False")
             config.set(

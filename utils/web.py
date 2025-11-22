@@ -3,15 +3,12 @@
 
 import platform
 import re
-import requests
 import traceback
 
 from collections import OrderedDict, namedtuple
 from urllib.parse import urlparse, parse_qs
 from time import sleep
 from typing import Any, NamedTuple, Optional
-
-from textio import print_error, print_warning
 
 
 def get_file_name_from_url(url: str) -> str:
@@ -145,7 +142,7 @@ def guess_check_key(
             user_agent: str,
         ) -> Optional[str]:
     """Tries to guess the check key from the Fansly homepage.
-    
+
     :param main_js_pattern: A regular expression to locate the main.*.js file.
     :type main_js_pattern: str
 
@@ -154,10 +151,12 @@ def guess_check_key(
 
     :param user_agent: Browser user agent to use for requests.
     :type user_agent: str
-    
+
     :return: The check key string if found or None otherwise.
     :rtype: Optional[str]
     """
+    import requests
+
     fansly_url = 'https://fansly.com'
 
     headers = {
@@ -214,6 +213,7 @@ def guess_check_key(
 
 def guess_user_agent(user_agents: dict, based_on_browser: str, default_ua: str) -> str:
     """Returns the guessed browser's user agent or a default one."""
+    from textio import print_error, print_warning
 
     if based_on_browser == 'Microsoft Edge':
         based_on_browser = 'Edg' # msedge only reports "Edg" as its identifier
@@ -262,7 +262,7 @@ def guess_user_agent(user_agents: dict, based_on_browser: str, default_ua: str) 
 
 def get_release_info_from_github(current_program_version: str) -> dict | None:
     """Fetches and parses the Fansly Downloader NG release info JSON from GitHub.
-    
+
     :param current_program_version: The current program version to be
         used in the user agent of web requests.
     :type current_program_version: str
@@ -271,6 +271,8 @@ def get_release_info_from_github(current_program_version: str) -> dict | None:
         None if there where any complications eg. network error.
     :rtype: dict | None
     """
+    import requests
+
     try:
         url = f"https://api.github.com/repos/prof79/fansly-downloader-ng/releases/latest"
 

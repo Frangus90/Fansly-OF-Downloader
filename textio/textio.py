@@ -14,6 +14,19 @@ from time import sleep
 
 LOG_FILE_NAME: str = 'fansly_downloader_ng.log'
 
+# GUI config reference for log routing
+_gui_config = None
+
+
+def set_gui_config(config):
+    """Set the config object to enable GUI log routing.
+
+    When set, all log messages will also be sent to the GUI's
+    log_callback if gui_mode is True.
+    """
+    global _gui_config
+    _gui_config = config
+
 
 # most of the time, we utilize this to display colored output rather than logging or prints
 def output(level: int, log_type: str, color: str, message: str) -> None:
@@ -43,6 +56,22 @@ def output(level: int, log_type: str, color: str, message: str) -> None:
     )
 
     logger.type(message)
+
+    # Route to GUI callback if available
+    if _gui_config and _gui_config.gui_mode and _gui_config.log_callback:
+        # Map log_type to GUI level
+        log_type_upper = log_type.strip().upper()
+        if 'ERROR' in log_type_upper:
+            gui_level = 'error'
+        elif 'WARNING' in log_type_upper:
+            gui_level = 'warning'
+        else:
+            gui_level = 'info'
+
+        try:
+            _gui_config.log_callback(message, gui_level)
+        except Exception:
+            pass  # Don't let GUI errors break logging
 
 
 def print_config(message: str) -> None:
