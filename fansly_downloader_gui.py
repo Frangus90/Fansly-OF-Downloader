@@ -84,7 +84,7 @@ def main():
                 "Application Error",
                 f"An error occurred. Please check fansly_downloader.log for details.\n\n{ex}"
             )
-        except:
+        except Exception:
             pass
 
         sys.exit(1)

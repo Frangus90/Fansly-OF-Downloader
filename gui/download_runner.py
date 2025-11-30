@@ -15,6 +15,8 @@ def run_download(config, stop_flag, progress_callback, log_callback):
     from download.account import get_creator_account_info
     from download.timeline import download_timeline
     from download.messages import download_messages
+    from download.single import download_single_post
+    from download.collections import download_collections
     from download.core import DownloadState
     from fileio.dedupe import dedupe_init
     from config.modes import DownloadMode
@@ -48,7 +50,11 @@ def run_download(config, stop_flag, progress_callback, log_callback):
     get_creator_account_info(config, state)
 
     # Download based on mode
-    if config.download_mode == DownloadMode.MESSAGES:
+    if config.download_mode == DownloadMode.SINGLE:
+        download_single_post(config, state)
+    elif config.download_mode == DownloadMode.COLLECTION:
+        download_collections(config, state)
+    elif config.download_mode == DownloadMode.MESSAGES:
         download_messages(config, state)
     elif config.download_mode == DownloadMode.TIMELINE:
         download_timeline(config, state)

@@ -128,4 +128,9 @@ class DownloadManager:
         try:
             self.progress_callback(update)
         except Exception as ex:
-            print(f"Progress callback error: {ex}")
+            # Log error using log callback if available, otherwise fallback to print
+            try:
+                self.log_callback(f"Progress callback error: {ex}", "error")
+            except Exception:
+                # Fallback if log callback also fails
+                print(f"Progress callback error: {ex}")

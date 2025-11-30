@@ -56,7 +56,7 @@ class EventHandlers:
         if len(selected_creators) > 1:
             self.sections["log"].add_log(
                 f"Multiple creators selected. Downloading {first_creator} first. "
-                f"({len(selected_creators)-1} others queued)",
+                f"({len(selected_creators)-1} other{'s' if len(selected_creators) > 2 else ''} selected - start new download after this completes)",
                 "info",
             )
 

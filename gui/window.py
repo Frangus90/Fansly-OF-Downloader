@@ -36,9 +36,8 @@ class MainWindow(ctk.CTk):
 
         config_path = Path.cwd() / "config.ini"
 
-        wizard_was_shown = False
+        wizard_was_completed = False
         if should_run_wizard(config_path):
-            wizard_was_shown = True
             log("Showing setup wizard...")
 
             # Show wizard
@@ -54,6 +53,7 @@ class MainWindow(ctk.CTk):
                 sys.exit(0)
 
             log("Setup wizard completed successfully")
+            wizard_was_completed = True
 
             # Add a small delay to ensure file is fully written to disk
             # This is especially important for EXE builds
@@ -78,7 +78,7 @@ class MainWindow(ctk.CTk):
                 log(f"  Absolute path: {config_path.absolute()}")
 
         # Now initialize the rest of the app
-        self._initialize_app(wizard_was_completed=wizard_was_shown)
+        self._initialize_app(wizard_was_completed=wizard_was_completed)
 
     def _initialize_app(self, wizard_was_completed=False):
         """Initialize application state and UI after wizard check"""

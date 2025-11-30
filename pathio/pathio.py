@@ -22,6 +22,11 @@ def ask_correct_dir() -> Path:
     while True:
         directory_name = filedialog.askdirectory()
 
+        # Handle case when user cancels dialog (returns None or empty string)
+        if not directory_name:
+            print_error(f"You did not choose a folder. Please try again!", 5)
+            continue
+
         if Path(directory_name).is_dir():
             print_info(f"Folder path chosen: {directory_name}")
             return Path(directory_name)
@@ -94,7 +99,8 @@ def delete_temporary_pyinstaller_files():
     try:
         base_path = sys._MEIPASS
 
-    except Exception:
+    except Exception as e:
+        # Not running as PyInstaller bundle, skip cleanup
         return
 
     temp_dir = os.path.abspath(os.path.join(base_path, '..'))
@@ -118,5 +124,7 @@ def delete_temporary_pyinstaller_files():
 
                 os.rmdir(item)
 
-        except Exception:
+        except Exception as e:
+            # Log but don't fail on individual file/folder deletion errors
+            # This is cleanup code, so we silently continue
             pass
