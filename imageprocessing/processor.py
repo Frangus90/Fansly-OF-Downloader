@@ -87,18 +87,18 @@ class ImageProcessor:
     ) -> Path:
         """
         Get the expected output path for a file (without collision handling).
+        Preserves original filename exactly.
 
         Args:
             original_path: Original image file path
             output_dir: Output directory
-            format: Output format (JPEG, PNG, WEBP)
+            format: Output format (JPEG, PNG, WEBP) - not used, kept for compatibility
 
         Returns:
             Path object for expected output file
         """
-        stem = original_path.stem
-        extension = self._get_output_extension(format)
-        return output_dir / f"{stem}{extension}"
+        # Preserve exact original filename
+        return output_dir / original_path.name
 
     def check_existing_files(
         self,
@@ -138,26 +138,27 @@ class ImageProcessor:
         overwrite: bool = False
     ) -> Path:
         """
-        Generate output path preserving original filename.
+        Generate output path preserving original filename exactly.
 
         Args:
             original_path: Original image file path
             output_dir: Output directory
-            format: Output format (JPEG, PNG, WEBP)
+            format: Output format (JPEG, PNG, WEBP) - not used, kept for compatibility
             overwrite: If True, return path even if file exists
 
         Returns:
             Path object for output file
         """
-        stem = original_path.stem
-        extension = self._get_output_extension(format)
-        output_path = output_dir / f"{stem}{extension}"
+        # Preserve exact original filename
+        output_path = output_dir / original_path.name
 
         # If overwrite mode, return directly
         if overwrite:
             return output_path
 
         # Handle collisions by adding numeric suffix
+        stem = original_path.stem
+        extension = original_path.suffix
         counter = 1
         while output_path.exists():
             output_path = output_dir / f"{stem}_{counter}{extension}"

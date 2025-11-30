@@ -268,10 +268,18 @@ class BatchQueuePanel(ctk.CTkFrame):
 
     def _browse_output_dir(self):
         """Browse for output directory"""
+        # Get toplevel window to use as parent
+        toplevel = self.winfo_toplevel()
+
         directory = filedialog.askdirectory(
+            parent=toplevel,
             title="Select Output Directory",
             initialdir=self.output_dir
         )
+
+        # Restore focus to crop window
+        toplevel.lift()
+        toplevel.focus_force()
 
         if directory:
             self.output_dir = Path(directory)
