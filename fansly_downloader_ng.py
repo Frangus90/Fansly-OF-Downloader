@@ -23,9 +23,7 @@ __credits__ = [
 ]
 
 # TODO: Remove pyffmpeg's "Github Activeness" message
-# TODO: Fix in future: audio needs to be properly transcoded from mp4 to mp3, instead of just saved as
-# TODO: Rate-limiting fix works but is terribly slow - would be nice to know how to interface with Fansly API properly
-# TODO: Check whether messages are rate-limited too or not
+
 
 
 import base64

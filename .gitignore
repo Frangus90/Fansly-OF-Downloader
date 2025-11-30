@@ -214,3 +214,7 @@ EXE_TESTING_NOTES.md
 *_TESTING_NOTES.md
 *_NOTES.md
 README1.md
+*plan*.md
+
+# Image crop tool user data
+crop_presets.json

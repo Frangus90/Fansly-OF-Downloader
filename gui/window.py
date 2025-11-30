@@ -21,6 +21,9 @@ class MainWindow(ctk.CTk):
         self.geometry("900x1000")
         self.minsize(700, 800)
 
+        # Initialize tkdnd for drag-and-drop support in child windows
+        self._init_tkdnd()
+
         # Check for setup wizard BEFORE initializing app state
         # This ensures wizard runs before config is loaded
         self._wizard_checked = False
@@ -151,6 +154,23 @@ class MainWindow(ctk.CTk):
                 os.system(f'xdg-open "{log_path}"')
         except Exception as e:
             log(f"Error opening log file: {e}")
+
+    def _init_tkdnd(self):
+        """Initialize tkdnd for drag-and-drop support"""
+        try:
+            # Import DnDWrapper which adds DnD methods to tkinter.BaseWidget
+            from tkinterdnd2.TkinterDnD import _require, DnDWrapper
+            # The import above adds drop_target_register, dnd_bind etc. to all widgets
+
+            # Load tkdnd into the Tcl interpreter
+            _require(self)
+            # Now all widgets (including CTk widgets) have DnD methods available
+        except ImportError:
+            # tkinterdnd2 not installed
+            pass
+        except Exception:
+            # tkdnd loading failed
+            pass
 
     def run(self):
         """Start the GUI main loop"""

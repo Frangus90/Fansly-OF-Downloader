@@ -33,6 +33,9 @@ def build_layout(parent, state, handlers):
     sections["settings"] = SettingsSection(left_frame, state.config)
     sections["settings"].pack(fill="x", padx=10, pady=5)
 
+    # Tools section (left)
+    sections["tools"] = build_tools_section(left_frame, handlers)
+
     # Progress section (left)
     from gui.widgets.progress_section import ProgressSection
 
@@ -99,3 +102,34 @@ def build_status_bar(parent):
     status_label.pack(fill="x", padx=10, pady=5)
 
     return status_label
+
+
+def build_tools_section(parent, handlers):
+    """Build tools section with Image Crop Tool button"""
+    tools_frame = ctk.CTkFrame(parent)
+    tools_frame.pack(fill="x", padx=10, pady=5)
+
+    # Title
+    title = ctk.CTkLabel(
+        tools_frame,
+        text="Tools",
+        font=("Arial", 16, "bold"),
+        anchor="w"
+    )
+    title.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="w")
+
+    # Image Crop Tool button
+    crop_btn = ctk.CTkButton(
+        tools_frame,
+        text="📐 Open Image Crop Tool",
+        command=handlers.on_open_crop_tool,
+        height=35,
+        font=("Arial", 12),
+        fg_color="#3b8ed0",
+    )
+    crop_btn.grid(row=1, column=0, padx=10, pady=(5, 10), sticky="ew")
+
+    # Configure grid
+    tools_frame.grid_columnconfigure(0, weight=1)
+
+    return tools_frame

@@ -2,6 +2,24 @@
 
 ## 🗒️ Release Notes
 
+### Unreleased
+
+**New Features:**
+- **Image Crop Tool** - Built-in bulk image cropping and batch processing tool
+  - Interactive crop canvas with real-time preview
+  - Drag-and-drop support for adding images
+  - Custom aspect ratio presets with save/load functionality
+  - Crop alignment options (center, top, bottom, left, right)
+  - Batch processing with per-image crop settings
+  - Multiple export formats (JPEG, PNG, WebP) with quality control
+  - Smart file conflict handling (overwrite/skip options)
+  - Support for all common image formats
+
+**Improvements:**
+- Added `tkinterdnd2` dependency for drag-and-drop functionality
+- Custom styled dialogs matching application theme
+- Default export quality increased to 100%
+
 ### v0.9.9 2024-06-28
 
 Accept URLs/be less picky when specifying single posts kudos ([#64](https://github.com/prof79/fansly-downloader-ng/issues/64)) @1gintonic

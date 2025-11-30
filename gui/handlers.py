@@ -126,3 +126,18 @@ class EventHandlers:
                 self.window.destroy()
         else:
             self.window.destroy()
+
+    def on_open_crop_tool(self):
+        """Handle opening the image crop tool window"""
+        from gui.tools.image_crop_window import ImageCropWindow
+        from pathlib import Path
+
+        # Get default output directory from download settings
+        if self.state.config.download_directory:
+            default_output = Path(self.state.config.download_directory) / "processed"
+        else:
+            default_output = Path.cwd() / "Downloads" / "processed"
+
+        # Open crop tool window
+        crop_window = ImageCropWindow(self.window, default_output_dir=default_output)
+        crop_window.focus()

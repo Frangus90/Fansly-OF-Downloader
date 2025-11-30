@@ -51,6 +51,33 @@ A powerful, feature-rich tool for downloading content from Fansly. Built with bo
 - **Connection Testing** - Verify credentials before downloading
 - **Log Access** - Press Ctrl+L to view diagnostic logs
 - **Incremental Mode** - Toggle to download only new content
+- **Image Crop Tool** - Built-in bulk image cropping with drag-and-drop support
+
+### Image Crop Tool
+
+The built-in Image Crop Tool allows you to batch process and crop downloaded images:
+
+**Features:**
+- **Bulk Processing** - Crop multiple images at once with individual settings
+- **Drag & Drop** - Drag images directly onto the window to add them
+- **Custom Aspect Ratios** - Apply specific aspect ratios (1:1, 16:9, 4:5, custom)
+- **Crop Alignment** - Position crops (center, top, bottom, left, right)
+- **Custom Presets** - Save frequently-used aspect ratios for quick access
+- **Live Preview** - Interactive canvas with real-time crop preview
+- **Format Options** - Export as JPEG, PNG, or WebP with quality control
+- **Batch Export** - Process entire queue with one click
+
+**Usage:**
+1. Open Tools → Image Crop Tool from the main menu
+2. Upload images or drag-and-drop them onto the window
+3. Adjust crop box on each image or apply aspect ratio to all
+4. Choose output format and quality settings
+5. Process batch to export all cropped images
+
+**File Handling:**
+- Automatically detects existing files and offers overwrite/skip options
+- Preserves original filenames by default
+- Supports all common image formats (.jpg, .png, .webp, .gif, .bmp)
 
 ## CLI Usage
 
