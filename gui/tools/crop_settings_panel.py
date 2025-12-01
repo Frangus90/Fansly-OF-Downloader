@@ -423,9 +423,6 @@ class CropSettingsPanel(ctk.CTkFrame):
             # Fill in the aspect ratio input box
             self.aspect_ratio_var.set(f"{ratio:.3f}")
 
-            # Enable aspect lock
-            self.lock_aspect_var.set(True)
-
             # Notify parent to apply this preset
             self.on_preset_change_callback(preset_name)
 
@@ -554,9 +551,6 @@ class CropSettingsPanel(ctk.CTkFrame):
             # Validate range
             if ratio <= 0.1 or ratio >= 10.0:
                 raise ValueError("Aspect ratio must be between 0.1 and 10.0")
-
-            # Enable aspect lock
-            self.lock_aspect_var.set(True)
 
             # Notify parent to update ALL images with this aspect ratio
             if self.on_aspect_ratio_apply_callback:

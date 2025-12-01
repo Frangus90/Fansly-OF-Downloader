@@ -7,6 +7,21 @@ from pathlib import Path
 from typing import Optional, Tuple, Callable
 
 
+# Cursor mapping for resize handles, move, and create operations
+CURSOR_MAP = {
+    'nw': 'top_left_corner',     # Northwest corner: ↖↘
+    'ne': 'top_right_corner',    # Northeast corner: ↗↙
+    'sw': 'bottom_left_corner',  # Southwest corner: ↙↗
+    'se': 'bottom_right_corner', # Southeast corner: ↘↖
+    'n': 'sb_v_double_arrow',    # North edge: ↕
+    's': 'sb_v_double_arrow',    # South edge: ↕
+    'e': 'sb_h_double_arrow',    # East edge: ↔
+    'w': 'sb_h_double_arrow',    # West edge: ↔
+    'move': 'fleur',             # Move entire box: ✥
+    'create': 'cross',           # Create new box: ✚
+}
+
+
 class CropCanvas(ctk.CTkFrame):
     """Canvas widget with interactive crop rectangle"""
 
@@ -72,6 +87,7 @@ class CropCanvas(ctk.CTkFrame):
         self.canvas.bind("<Button-1>", self._on_mouse_down)
         self.canvas.bind("<B1-Motion>", self._on_mouse_move)
         self.canvas.bind("<ButtonRelease-1>", self._on_mouse_up)
+        self.canvas.bind("<Motion>", self._on_mouse_motion)
         self.canvas.bind("<Configure>", self._on_canvas_resize)
 
         # Navigation controls
@@ -213,13 +229,13 @@ class CropCanvas(ctk.CTkFrame):
             self.crop_y1,
             self.crop_x2,
             self.crop_y2,
-            outline="#00ff00",
+            outline="#ffffff",
             width=2,
             dash=(5, 5)
         )
 
-        # Draw resize handles
-        handle_size = 8
+        # Draw resize handles (visual size)
+        handle_size = 10  # Increased from 8 for better visibility
         handles = {
             'nw': (self.crop_x1, self.crop_y1),
             'ne': (self.crop_x2, self.crop_y1),
@@ -237,7 +253,7 @@ class CropCanvas(ctk.CTkFrame):
                 y - handle_size // 2,
                 x + handle_size // 2,
                 y + handle_size // 2,
-                fill="#00ff00",
+                fill="#2116be",
                 outline="white",
                 width=1
             )
@@ -247,10 +263,10 @@ class CropCanvas(ctk.CTkFrame):
         """Handle mouse button press"""
         x, y = event.x, event.y
 
-        # Check if clicking on a handle
-        handle_size = 8
+        # Check if clicking on a handle (larger hit area for easier clicking)
+        hit_detection_size = 15  # Larger than visual size for better UX
         for pos, (hx, hy) in self._get_handle_positions().items():
-            if abs(x - hx) <= handle_size and abs(y - hy) <= handle_size:
+            if abs(x - hx) <= hit_detection_size and abs(y - hy) <= hit_detection_size:
                 self.drag_mode = pos
                 self.drag_start_x = x
                 self.drag_start_y = y
@@ -263,7 +279,20 @@ class CropCanvas(ctk.CTkFrame):
             self.drag_start_x = x
             self.drag_start_y = y
         else:
-            self.drag_mode = None
+            # Clicking outside - start creating new crop box
+            self.drag_mode = 'create'
+            self.drag_start_x = x
+            self.drag_start_y = y
+            # Initialize crop box at click point
+            self.crop_x1 = x
+            self.crop_y1 = y
+            self.crop_x2 = x
+            self.crop_y2 = y
+
+        # Set cursor for drag operation
+        if self.drag_mode:
+            cursor = CURSOR_MAP.get(self.drag_mode, 'arrow')
+            self.canvas.configure(cursor=cursor)
 
     def _on_mouse_move(self, event):
         """Handle mouse movement while dragging"""
@@ -281,6 +310,14 @@ class CropCanvas(ctk.CTkFrame):
             self.crop_x2 += dx
             self.crop_y2 += dy
 
+        elif self.drag_mode == 'create':
+            # Creating new crop box - expand from start point to current position
+            # Use min/max to handle dragging in any direction from anchor point
+            self.crop_x1 = min(self.drag_start_x, x)
+            self.crop_y1 = min(self.drag_start_y, y)
+            self.crop_x2 = max(self.drag_start_x, x)
+            self.crop_y2 = max(self.drag_start_y, y)
+
         elif self.drag_mode in ('nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'):
             # Resize rectangle
             if 'n' in self.drag_mode:
@@ -296,9 +333,10 @@ class CropCanvas(ctk.CTkFrame):
             if self.locked_aspect_ratio:
                 self._apply_aspect_ratio_constraint()
 
-        # Update drag start position
-        self.drag_start_x = x
-        self.drag_start_y = y
+        # Update drag start position (except for create mode where anchor stays fixed)
+        if self.drag_mode != 'create':
+            self.drag_start_x = x
+            self.drag_start_y = y
 
         # Constrain crop to image bounds
         self._constrain_crop_to_bounds()
@@ -310,6 +348,33 @@ class CropCanvas(ctk.CTkFrame):
     def _on_mouse_up(self, event):
         """Handle mouse button release"""
         self.drag_mode = None
+        # Update cursor based on current mouse position
+        self._on_mouse_motion(event)
+
+    def _on_mouse_motion(self, event):
+        """Handle mouse motion to update cursor based on hover position"""
+        # Don't change cursor while actively dragging
+        if self.drag_mode:
+            return
+
+        x, y = event.x, event.y
+        hit_detection_size = 15  # Same as click detection
+
+        # Check if hovering over a resize handle
+        for pos, (hx, hy) in self._get_handle_positions().items():
+            if abs(x - hx) <= hit_detection_size and abs(y - hy) <= hit_detection_size:
+                cursor = CURSOR_MAP.get(pos, 'arrow')
+                self.canvas.configure(cursor=cursor)
+                return
+
+        # Check if hovering inside crop rectangle (move cursor)
+        if (self.crop_x1 <= x <= self.crop_x2 and
+            self.crop_y1 <= y <= self.crop_y2):
+            self.canvas.configure(cursor=CURSOR_MAP['move'])
+            return
+
+        # Crosshair cursor when outside crop area (indicates can create new box)
+        self.canvas.configure(cursor='crosshair')
 
     def _get_handle_positions(self) -> dict:
         """Get current handle positions"""
