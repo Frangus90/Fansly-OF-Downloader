@@ -244,15 +244,20 @@ class ImageCropWindow(ctk.CTkToplevel):
             # Load image (no preset dimensions - just load the image)
             self.crop_canvas.load_image(filepath)
 
+            # Get settings from panel to check lock state
+            settings = self.settings_panel.get_settings()
+
             # Restore saved crop if exists
             if saved_settings:
                 if saved_settings.get('crop_rect'):
                     self.crop_canvas.set_crop_from_coordinates(saved_settings['crop_rect'])
-                if saved_settings.get('aspect_ratio'):
+                # Only restore aspect ratio if lock checkbox is currently checked
+                if settings['lock_aspect'] and saved_settings.get('aspect_ratio'):
                     self.crop_canvas.set_aspect_ratio(saved_settings['aspect_ratio'])
+                elif not settings['lock_aspect']:
+                    self.crop_canvas.set_aspect_ratio(None)
             else:
-                # Get settings from panel
-                settings = self.settings_panel.get_settings()
+                # No saved settings - use current panel settings
                 if settings['lock_aspect']:
                     # If lock is enabled, try to get ratio from current aspect
                     ratio = self.settings_panel.get_current_aspect_ratio_input()
@@ -305,7 +310,13 @@ class ImageCropWindow(ctk.CTkToplevel):
         settings = self.settings_panel.get_settings()
 
         # Update aspect ratio lock
-        if not settings['lock_aspect']:
+        if settings['lock_aspect']:
+            # Lock is ON - get ratio from input field and apply it
+            ratio = self.settings_panel.get_current_aspect_ratio_input()
+            if ratio:
+                self.crop_canvas.set_aspect_ratio(ratio)
+        else:
+            # Lock is OFF - clear aspect ratio
             self.crop_canvas.set_aspect_ratio(None)
 
     def _on_aspect_ratio_applied(self, ratio: float):
@@ -373,6 +384,9 @@ class ImageCropWindow(ctk.CTkToplevel):
 
         # Set aspect ratio lock on canvas
         self.crop_canvas.set_aspect_ratio(ratio)
+
+        # Check the lock checkbox to reflect that aspect ratio is now locked
+        self.settings_panel.lock_aspect_var.set(True)
 
         # Reload current image to show the new crop
         if self.current_image_index >= 0:
