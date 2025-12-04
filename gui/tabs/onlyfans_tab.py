@@ -28,9 +28,9 @@ def build_onlyfans_layout(parent, state, handlers):
     sections["auth"] = OnlyFansAuthSection(left_frame, state.config)
     sections["auth"].pack(fill="x", padx=10, pady=5)
 
-    # Settings (can reuse Fansly's)
-    from gui.widgets.settings_section import SettingsSection
-    sections["settings"] = SettingsSection(left_frame, state.config)
+    # Settings (OF-specific - simplified)
+    from gui.widgets.onlyfans_settings_section import OnlyFansSettingsSection
+    sections["settings"] = OnlyFansSettingsSection(left_frame, state.config)
     sections["settings"].pack(fill="x", padx=10, pady=5)
 
     # Tools section (reuse - includes Image Crop Tool)
