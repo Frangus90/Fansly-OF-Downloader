@@ -1,10 +1,11 @@
 # Fansly Downloader NG
 
 <div align="center">
+  
   <a href="https://github.com/Frangus90/fansly-downloader-ng/releases/latest">
-    <img src="https://img.shields.io/github/downloads/prof79/fansly-downloader-ng/total?color=0078d7&label=%F0%9F%94%BD%20Downloads&style=flat-square" alt="Downloads" />
+    <img src="https://img.shields.io/github/v/release/prof79/fansly-downloader-ng?color=%23b02d4a&display_name=tag&label=%F0%9F%9A%80%20Latest%20Compiled%20Release&style=flat-square" alt="Latest Release" />
   </a>
-</div>
+  </div>
 
 
 A powerful, feature-rich tool for downloading content from Fansly. Built with both GUI and CLI interfaces for maximum flexibility.
