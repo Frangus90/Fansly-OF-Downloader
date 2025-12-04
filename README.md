@@ -3,7 +3,7 @@
 <div align="center">
   
   <a href="https://github.com/Frangus90/fansly-downloader-ng/releases/latest">
-    <img src="https://img.shields.io/github/v/release/prof79/fansly-downloader-ng?color=%23b02d4a&display_name=tag&label=%F0%9F%9A%80%20Latest%20Compiled%20Release&style=flat-square" alt="Latest Release" />
+    <img src="https://img.shields.io/github/v/release/Frangus90/fansly-downloader-ng?color=%23b02d4a&display_name=tag&label=%F0%9F%9A%80%20Latest%20Compiled%20Release&style=flat-square" alt="Latest Release" />
   </a>
   </div>
 
