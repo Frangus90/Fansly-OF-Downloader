@@ -1,28 +1,11 @@
 # Fansly Downloader NG
 
 <div align="center">
-  <a href="https://github.com/prof79/fansly-downloader-ng/releases/latest">
+  <a href="https://github.com/Frangus90/fansly-downloader-ng/releases/latest">
     <img src="https://img.shields.io/github/downloads/prof79/fansly-downloader-ng/total?color=0078d7&label=%F0%9F%94%BD%20Downloads&style=flat-square" alt="Downloads" />
-  </a>
-  <a href="https://github.com/prof79/fansly-downloader-ng/releases/latest">
-    <img src="https://img.shields.io/github/v/release/prof79/fansly-downloader-ng?color=%23b02d4a&display_name=tag&label=%F0%9F%9A%80%20Latest%20Compiled%20Release&style=flat-square" alt="Latest Release" />
-  </a>
-  <a href="https://github.com/prof79/fansly-downloader-ng/commits/main">
-    <img src="https://img.shields.io/github/commits-since/prof79/fansly-downloader-ng/latest?color=orange&label=%F0%9F%92%81%20Uncompiled%20Commits&style=flat-square" alt="Commits since latest release" />
-  </a>
-  <a href="https://github.com/prof79/fansly-downloader-ng/issues?q=is%3Aissue+is%3Aopen+label%3Abug">
-    <img src="https://img.shields.io/github/issues-raw/prof79/fansly-downloader-ng/bug?color=pink&label=%F0%9F%A6%84%20Active%20Bugs&style=flat-square" alt="Active Bugs" />
   </a>
 </div>
 
-<div align="center">
-  <a href="https://www.python.org/downloads/">
-    <img src="https://img.shields.io/static/v1?style=flat-square&label=%F0%9F%90%8D%20Python&message=3.11%2B&color=3c8c50" alt="Compatibility" />
-  </a>
-  <img src="https://img.shields.io/badge/%F0%9F%AA%9F-Windows-0078D6?style=flat-square" alt="Compatible with Windows" />
-  <img src="https://img.shields.io/badge/%F0%9F%90%A7-Linux-FCC624?style=flat-square" alt="Compatible with Linux" />
-  <img src="https://img.shields.io/badge/%E2%9A%AA-macOS-000000?style=flat-square" alt="Compatible with macOS" />
-</div>
 
 A powerful, feature-rich tool for downloading content from Fansly. Built with both GUI and CLI interfaces for maximum flexibility.
 
