@@ -133,7 +133,7 @@ def open_url(url_to_open: str) -> None:
 
 
 def open_get_started_url() -> None:
-    open_url('https://github.com/prof79/fansly-downloader-ng/wiki/Getting-Started')
+    open_url('https://github.com/Frangus90/fansly-downloader-ng/wiki/Getting-Started')
 
 
 def guess_check_key(
@@ -274,7 +274,7 @@ def get_release_info_from_github(current_program_version: str) -> dict | None:
     import requests
 
     try:
-        url = f"https://api.github.com/repos/prof79/fansly-downloader-ng/releases/latest"
+        url = f"https://api.github.com/repos/Frangus90/fansly-downloader-ng/releases/latest"
 
         response = requests.get(
             url,

@@ -11,9 +11,7 @@ __date__ = '2025-01-13'
 __maintainer__ = 'prof79'
 __copyright__ = f'Copyright (C) 2024-2025 by {__maintainer__}'
 
-import base64
 import traceback
-from datetime import datetime
 
 from config.onlyfans_config import (
     OnlyFansConfig,
@@ -22,7 +20,18 @@ from config.onlyfans_config import (
 )
 from download_of import download_timeline, get_creator_account_info
 from download.downloadstate import DownloadState
-from errors import *
+from errors import (
+    EXIT_SUCCESS,
+    EXIT_ABORT,
+    API_ERROR,
+    CONFIG_ERROR,
+    DOWNLOAD_ERROR,
+    SOME_USERS_FAILED,
+    UNEXPECTED_ERROR,
+    ApiError,
+    DownloadError,
+    ConfigError,
+)
 from textio import (
     input_enter_close,
     input_enter_continue,

@@ -17,12 +17,5 @@ customtkinter>=5.2.0
 darkdetect>=0.8.0
 tkinterdnd2>=0.3.0
 
-# EXE Building
-pyinstaller>=6.0.0
-
-# Development Dependencies (for validation)
-black>=23.0.0
-pylint>=3.0.0
-
 # Image processing dependencies
 numpy>=1.24.0

@@ -43,7 +43,7 @@ This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [F
 - **Bulk Processing** - Easily update prior download folders
 - **Customizable** - Separate media into sub-folders, download previews, and more
 
-For detailed configuration settings, see the [Wiki](https://github.com/prof79/fansly-downloader-ng/wiki/Explanation-of-provided-programs-&-their-functionality#explanation-of-configini).
+For detailed configuration settings, see the [Wiki](https://github.com/Frangus90/fansly-downloader-ng/wiki/Explanation-of-provided-programs-&-their-functionality#explanation-of-configini).
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ For detailed configuration settings, see the [Wiki](https://github.com/prof79/fa
 
 #### Windows (Executable)
 
-1. Download the latest release from the [releases page](https://github.com/prof79/fansly-downloader-ng/releases/latest)
+1. Download the latest release from the [releases page](https://github.com/Frangus90/fansly-downloader-ng/releases/latest)
 2. Extract and run `fansly_downloader_gui.exe`
 3. Complete the setup wizard with your Fansly auth token
 4. Add creators and start downloading
@@ -83,7 +83,7 @@ sudo apt-get install python3-tk
 
 On Windows and macOS, the `Tkinter` module is typically included in the Python installer.
 
-Raw Python code versions of **Fansly Downloader NG** do not receive automatic updates. If an update is available you will be notified but need to manually download and set-up the [current repository](https://github.com/prof79/fansly-downloader-ng/archive/refs/heads/master.zip) again.
+Raw Python code versions of **Fansly Downloader NG** do not receive automatic updates. If an update is available you will be notified but need to manually download and set-up the [current repository](https://github.com/Frangus90/fansly-downloader-ng/archive/refs/heads/master.zip) again.
 
 ### OnlyFans
 
@@ -226,7 +226,7 @@ Created automatically when using OnlyFans features. Completely independent from 
 
 **Note:** Both platforms maintain separate download histories and states, allowing you to use both simultaneously without conflicts.
 
-See the [Wiki](https://github.com/prof79/fansly-downloader-ng/wiki) for detailed configuration options.
+See the [Wiki](https://github.com/Frangus90/fansly-downloader-ng/wiki) for detailed configuration options.
 
 ## Incremental Downloads
 
@@ -304,7 +304,7 @@ A: The executable is not digitally signed (certificates are expensive), causing 
 A: No, mobile devices are not currently supported.
 
 **Q: Could you add X feature or do X change?**
-A: I'm regrettably very limited on time and thus primarily do stuff I find useful myself. You can contribute code by [opening a pull request](https://github.com/prof79/fansly-downloader-ng/pulls).
+A: I'm regrettably very limited on time and thus primarily do stuff I find useful myself. You can contribute code by [opening a pull request](https://github.com/Frangus90/fansly-downloader-ng/pulls).
 
 Please note that "Issue" tickets are reserved for reporting genuine or suspected bugs in the codebase of the downloader which require attention from the developer. They are not for general computer user problems.
 

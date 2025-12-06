@@ -30,8 +30,8 @@ assignees: ''
 *( fill ``[ ]`` with ``x``, if you've already done said task )*
 
 I have done the following:
-- [ ] Looked through [old GitHub issues](https://github.com/prof79/fansly-downloader-ng/issues?&q=is%3Aissue)
-- [ ] Read the [config.ini options](https://github.com/prof79/fansly-downloader-ng/wiki/Fansly-Downloader-NG-Settings#explanation-of-configini)
+- [ ] Looked through [old GitHub issues](https://github.com/Frangus90/fansly-downloader-ng/issues?&q=is%3Aissue)
+- [ ] Read the [config.ini options](https://github.com/Frangus90/fansly-downloader-ng/wiki/Fansly-Downloader-NG-Settings#explanation-of-configini)
 - [ ] Searched the Web (like [DuckDuckGo](https://duckduckgo.com))
 
 ## Additional context

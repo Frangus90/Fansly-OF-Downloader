@@ -161,14 +161,18 @@ class FanslyApi(object):
     def get_with_ngsw(
                 self,
                 url: str,
-                params: dict[str, str]={},
-                cookies: dict[str, str]={},
+                params: dict[str, str] | None = None,
+                cookies: dict[str, str] | None = None,
                 stream: bool=False,
                 add_fansly_headers: bool=True,
                 alternate_token: Optional[str]=None,
             ) -> Response:
 
         self.update_client_timestamp()
+
+        # Handle mutable defaults
+        params = params or {}
+        cookies = cookies or {}
 
         default_params = self.get_ngsw_params()
 
@@ -454,7 +458,7 @@ class FanslyApi(object):
     def get_active_session(self) -> str:
         return asyncio.run(self.get_active_session_async())
 
-    #region
+    #endregion
 
 
     #region Utility Methods
@@ -675,4 +679,4 @@ class FanslyApi(object):
 
         return self.device_id
 
-    #region
+    #endregion

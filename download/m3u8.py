@@ -3,7 +3,6 @@
 
 import concurrent.futures
 
-#from memory_profiler import profile
 from m3u8 import M3U8
 from pathlib import Path
 from rich.table import Column

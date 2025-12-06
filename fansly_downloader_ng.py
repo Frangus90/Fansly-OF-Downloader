@@ -3,7 +3,7 @@
 """Fansly Downloader NG"""
 
 __version__ = '0.9.9'
-__date__ = '2024-06-28T15:08:00+02'
+__date__ = '2025-12-06'
 __maintainer__ = 'prof79'
 __copyright__ = f'Copyright (C) 2023-2024 by {__maintainer__}'
 __authors__ = [
@@ -29,14 +29,35 @@ __credits__ = [
 import base64
 import traceback
 
-#from memory_profiler import profile
 from datetime import datetime
 
 from config import FanslyConfig, load_config, validate_adjust_config
 from config.args import parse_args, map_args_to_config
 from config.modes import DownloadMode
-from download.core import *
-from errors import *
+from download.core import (
+    download_collections,
+    print_download_info,
+    download_messages,
+    download_single_post,
+    download_timeline,
+    DownloadState,
+    GlobalState,
+    get_creator_account_info,
+)
+from errors import (
+    EXIT_SUCCESS,
+    EXIT_ABORT,
+    EXIT_ERROR,
+    API_ERROR,
+    CONFIG_ERROR,
+    DOWNLOAD_ERROR,
+    SOME_USERS_FAILED,
+    UNEXPECTED_ERROR,
+    ApiError,
+    ApiAccountInfoError,
+    ConfigError,
+    DownloadError,
+)
 from fileio.dedupe import dedupe_init
 from pathio import delete_temporary_pyinstaller_files
 from textio import (
@@ -49,7 +70,12 @@ from textio import (
 )
 from updater import self_update
 from utils.common import open_location
-from utils.statistics import *
+from utils.statistics import (
+    update_global_statistics,
+    print_timing_statistics,
+    print_statistics,
+    print_global_statistics,
+)
 from utils.timer import Timer
 
 
@@ -166,10 +192,10 @@ def main(config: FanslyConfig) -> int:
                     download_collections(config, state)
 
                 else:
-                    if any([config.download_mode == DownloadMode.MESSAGES, config.download_mode == DownloadMode.NORMAL]):
+                    if config.download_mode in [DownloadMode.MESSAGES, DownloadMode.NORMAL]:
                         download_messages(config, state)
 
-                    if any([config.download_mode == DownloadMode.TIMELINE, config.download_mode == DownloadMode.NORMAL]):
+                    if config.download_mode in [DownloadMode.TIMELINE, DownloadMode.NORMAL]:
                         download_timeline(config, state)
 
                 update_global_statistics(global_download_state, download_state=state)

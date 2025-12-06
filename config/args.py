@@ -74,13 +74,6 @@ def parse_args() -> argparse.Namespace:
         help="Fansly's _checkKey in the main.js on https://fansly.com. "
             "Essential for digital signature and preventing bans.",
     )
-    # parser.add_argument(
-    #     '-sid', '--session-id',
-    #     required=False,
-    #     default=None,
-    #     dest='session_id',
-    #     help="Fansly's session ID.",
-    # )
 
     #endregion Essentials
 

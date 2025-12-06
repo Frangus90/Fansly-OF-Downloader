@@ -1,4 +1,11 @@
-pyinstaller
+# Build tools
+pyinstaller>=6.0.0
+
+# Development tools
+black>=23.0.0
+pylint>=3.0.0
+
+# Type stubs
 types-python-dateutil
 types-requests
 types-setuptools

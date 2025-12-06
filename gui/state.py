@@ -3,9 +3,11 @@ Application state management
 """
 
 import json
+import traceback
 from pathlib import Path
 from config import FanslyConfig, load_config
 from config.onlyfans_config import OnlyFansConfig, load_onlyfans_config
+from gui.logger import log
 
 
 class AppState:
@@ -32,9 +34,6 @@ class AppState:
     def load_config_file(self):
         """Load configuration from config.ini"""
         try:
-            from pathlib import Path
-            from gui.logger import log
-
             log("AppState: Loading config from file...")
             log(f"AppState: Current working directory: {Path.cwd()}")
 
@@ -70,8 +69,6 @@ class AppState:
             log(f"  - check_key: {self.config.check_key if self.config.check_key else 'NOT SET'}")
 
         except Exception as ex:
-            from gui.logger import log
-            import traceback
             log(f"AppState: Exception during config loading!")
             log(f"  Exception type: {type(ex).__name__}")
             log(f"  Exception message: {ex}")
@@ -149,14 +146,11 @@ class OnlyFansAppState:
     def load_config_file(self):
         """Load OnlyFans configuration"""
         try:
-            from gui.logger import log
-
             log("OnlyFansAppState: Loading OF config...")
             load_onlyfans_config(self.config)
             log(f"OnlyFansAppState: Config loaded - sess: {'SET' if self.config.sess else 'NOT SET'}")
 
         except Exception as ex:
-            from gui.logger import log
             log(f"OnlyFansAppState: Config load error: {ex}")
 
     def save_config_file(self):

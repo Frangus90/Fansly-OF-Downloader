@@ -161,7 +161,7 @@ class EventHandlers:
             try:
                 error_detail = response.json()
                 error_msg = error_detail.get('error', {}).get('message', response.text[:100])
-            except:
+            except (ValueError, KeyError, json.JSONDecodeError):
                 error_msg = response.text[:100] if response.text else 'No error details'
             raise RuntimeError(f"Failed to fetch subscriptions from Fansly (HTTP {response.status_code}): {error_msg}")
 
