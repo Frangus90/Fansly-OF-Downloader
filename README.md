@@ -13,7 +13,6 @@ A powerful, feature-rich tool for downloading content from Fansly and OnlyFans. 
 ![Fansly Downloader NG Screenshot GUI](resources/python_THN03KTORt.png)
 ![OF Downloader NG Screenshot GUI](resources/python_lcSK3Te4hd.png)
 ![Fansly Downloader NG Bulk Cropper Screenshot](resources/python_yGNIgdcM4X.png)
-![Fansly Downloader NG Screenshot](resources/fansly_ng_screenshot.png)
 
 This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [Fansly Downloader](https://github.com/Avnsx/fansly-downloader), expanded to support both Fansly and OnlyFans. **Fansly & OnlyFans Downloader NG** supports new features:
 
