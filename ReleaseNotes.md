@@ -4,21 +4,26 @@
 
 ### Unreleased
 
+**Major Addition:**
+- **OnlyFans Support** - Full platform integration with dedicated GUI tab and CLI (`onlyfans_downloader.py`)
+  - Separate configuration system (`onlyfans_config.ini`)
+  - Independent authentication and state management
+  - Timeline downloads and account information
+  - Built-in credential extraction guide
+
 **New Features:**
-- **Image Crop Tool** - Built-in bulk image cropping and batch processing tool
-  - Interactive crop canvas with real-time preview
-  - Drag-and-drop support for adding images
-  - Custom aspect ratio presets with save/load functionality
-  - Crop alignment options (center, top, bottom, left, right)
-  - Batch processing with per-image crop settings
-  - Multiple export formats (JPEG, PNG, WebP) with quality control
-  - Smart file conflict handling (overwrite/skip options)
-  - Support for all common image formats
+- **Subscription Import** - Automatically import all subscribed creators (both platforms)
+- **Post Limit Settings** - Configure initial download limits for new creators
+- **Image Crop Tool** - Built-in bulk image cropping and batch processing
+  - Interactive canvas with drag-and-drop support
+  - Custom aspect ratio presets and alignment options
+  - Multiple export formats (JPEG, PNG, WebP)
 
 **Improvements:**
-- Added `tkinterdnd2` dependency for drag-and-drop functionality
-- Custom styled dialogs matching application theme
-- Default export quality increased to 100%
+- Enhanced crop tool with reactive cursors and drag-to-create functionality
+- Better resize handles and aspect ratio handling
+- Improved error handling and logging throughout
+- Enhanced output directory browsing and filename preservation
 
 ### v0.9.9 2024-06-28
 

@@ -117,7 +117,7 @@ def build_tools_section(parent, handlers):
     # Title
     title = ctk.CTkLabel(
         tools_frame,
-        text="Tools",
+        text="Tools - Image Crop Tool",
         font=("Arial", 16, "bold"),
         anchor="w"
     )
@@ -126,7 +126,7 @@ def build_tools_section(parent, handlers):
     # Image Crop Tool button
     crop_btn = ctk.CTkButton(
         tools_frame,
-        text="📐 Open Image Crop Tool",
+        text="Open Image Crop Tool",
         command=handlers.on_open_crop_tool,
         height=35,
         font=("Arial", 12),

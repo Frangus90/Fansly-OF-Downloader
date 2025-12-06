@@ -128,7 +128,7 @@ class EventHandlers:
             self.window.destroy()
 
     def on_open_crop_tool(self):
-        """Handle opening the image crop tool window"""
+        """Handle opening the image crop tool window (CustomTkinter version)"""
         from gui.tools.image_crop_window import ImageCropWindow
         from pathlib import Path
 
@@ -308,7 +308,7 @@ class OnlyFansEventHandlers:
         self.window.after(0, self.sections["log"].add_log, message, level)
 
     def on_open_crop_tool(self):
-        """Handle opening the image crop tool window"""
+        """Handle opening the image crop tool window (CustomTkinter version)"""
         from gui.tools.image_crop_window import ImageCropWindow
         from pathlib import Path
 
