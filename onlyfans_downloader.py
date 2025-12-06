@@ -143,8 +143,26 @@ def main(config: OnlyFansConfig) -> int:
                 print_info(f"✓ Completed: {creator_name}")
                 print_info(f"  Files downloaded: {state.files_downloaded}")
 
+            except ApiError as e:
+                print_error(f"API error processing {creator_name}: {e}")
+                if config.interactive:
+                    input_enter_continue(True)
+                exit_code = SOME_USERS_FAILED
+
+            except DownloadError as e:
+                print_error(f"Download error processing {creator_name}: {e}")
+                if config.interactive:
+                    input_enter_continue(True)
+                exit_code = SOME_USERS_FAILED
+
+            except ConfigError as e:
+                print_error(f"Configuration error processing {creator_name}: {e}")
+                if config.interactive:
+                    input_enter_continue(True)
+                exit_code = SOME_USERS_FAILED
+
             except Exception as e:
-                print_error(f"Failed to process {creator_name}: {e}")
+                print_error(f"Unexpected error processing {creator_name} (type: {type(e).__name__}): {e}\n{traceback.format_exc()}")
                 if config.interactive:
                     input_enter_continue(True)
                 exit_code = SOME_USERS_FAILED

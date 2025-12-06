@@ -52,4 +52,18 @@ class MediaItem(object):
         if self.is_preview:
             id = 'preview_id'
 
+        # Ensure file_extension is not None
+        if self.file_extension is None:
+            # Try to get extension from download URL if available
+            if self.download_url:
+                ext = self.get_download_url_file_extension()
+                if ext:
+                    self.file_extension = ext
+                else:
+                    # Default to 'bin' if we can't determine extension
+                    self.file_extension = 'bin'
+            else:
+                # No download URL and no extension - use default
+                self.file_extension = 'bin'
+
         return f"{self.created_at_str()}_{id}_{self.media_id}.{self.file_extension}"

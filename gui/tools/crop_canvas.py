@@ -488,6 +488,7 @@ class CropCanvas(ctk.CTkFrame):
     def update_crop_for_target_size(self, width: int, height: int):
         """
         Update crop rectangle to match target dimensions (maintaining aspect ratio).
+        Note: This does NOT set the aspect ratio lock - use set_aspect_ratio() for that.
 
         Args:
             width: Target width
@@ -496,9 +497,9 @@ class CropCanvas(ctk.CTkFrame):
         if not self.original_image:
             return
 
-        # Calculate aspect ratio
+        # Calculate aspect ratio (but don't set the lock - preserve current lock state)
         aspect = width / height if height > 0 else 1.0
-        self.locked_aspect_ratio = aspect
+        # Don't modify self.locked_aspect_ratio here - only update_crop_for_target_size should change it
 
         # Get current crop center
         center_x = (self.crop_x1 + self.crop_x2) // 2

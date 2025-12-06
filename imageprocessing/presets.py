@@ -2,18 +2,22 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 # Presets file location (next to the main script)
 PRESETS_FILE = Path(__file__).parent.parent / "crop_presets.json"
 
+# Preset data structure: can be float (legacy) or dict with 'aspect_ratio' and 'anchor'
+PresetData = Union[float, Dict[str, Union[float, str]]]
 
-def load_presets() -> Dict[str, float]:
+
+def load_presets() -> Dict[str, PresetData]:
     """
     Load custom presets from JSON file.
+    Supports both legacy format (float) and new format (dict with aspect_ratio and anchor).
 
     Returns:
-        Dictionary mapping preset name to aspect ratio
+        Dictionary mapping preset name to preset data (float or dict)
     """
     if PRESETS_FILE.exists():
         try:
@@ -24,12 +28,12 @@ def load_presets() -> Dict[str, float]:
     return {}
 
 
-def save_presets(presets: Dict[str, float]) -> bool:
+def save_presets(presets: Dict[str, PresetData]) -> bool:
     """
     Save presets to JSON file.
 
     Args:
-        presets: Dictionary mapping preset name to aspect ratio
+        presets: Dictionary mapping preset name to preset data
 
     Returns:
         True if saved successfully
@@ -42,19 +46,29 @@ def save_presets(presets: Dict[str, float]) -> bool:
         return False
 
 
-def add_preset(name: str, aspect_ratio: float) -> bool:
+def add_preset(name: str, aspect_ratio: float, anchor: Optional[str] = None) -> bool:
     """
     Add a new preset.
 
     Args:
         name: Preset name
         aspect_ratio: Aspect ratio (width/height)
+        anchor: Optional alignment/anchor (Center, Top, Bottom, Left, Right)
 
     Returns:
         True if added successfully
     """
     presets = load_presets()
-    presets[name] = aspect_ratio
+    
+    # Save as new format if anchor is provided, otherwise save as legacy format for compatibility
+    if anchor:
+        presets[name] = {
+            'aspect_ratio': aspect_ratio,
+            'anchor': anchor
+        }
+    else:
+        presets[name] = aspect_ratio
+    
     return save_presets(presets)
 
 
@@ -89,6 +103,7 @@ def get_preset_names() -> List[str]:
 def get_preset_aspect_ratio(name: str) -> Optional[float]:
     """
     Get aspect ratio for a preset.
+    Supports both legacy format (float) and new format (dict).
 
     Args:
         name: Preset name
@@ -97,7 +112,77 @@ def get_preset_aspect_ratio(name: str) -> Optional[float]:
         Aspect ratio or None if not found
     """
     presets = load_presets()
-    return presets.get(name)
+    preset_data = presets.get(name)
+    
+    if preset_data is None:
+        return None
+    
+    # Handle legacy format (float)
+    if isinstance(preset_data, (int, float)):
+        return float(preset_data)
+    
+    # Handle new format (dict)
+    if isinstance(preset_data, dict):
+        return preset_data.get('aspect_ratio')
+    
+    return None
+
+
+def get_preset_anchor(name: str) -> Optional[str]:
+    """
+    Get anchor/alignment for a preset.
+
+    Args:
+        name: Preset name
+
+    Returns:
+        Anchor string (Center, Top, Bottom, Left, Right) or None if not found/legacy format
+    """
+    presets = load_presets()
+    preset_data = presets.get(name)
+    
+    if preset_data is None:
+        return None
+    
+    # Handle new format (dict)
+    if isinstance(preset_data, dict):
+        return preset_data.get('anchor', 'Center')  # Default to Center if missing
+    
+    # Legacy format doesn't have anchor
+    return None
+
+
+def get_preset_data(name: str) -> Optional[Dict[str, Union[float, str]]]:
+    """
+    Get full preset data (aspect ratio and anchor).
+
+    Args:
+        name: Preset name
+
+    Returns:
+        Dictionary with 'aspect_ratio' and 'anchor' keys, or None if not found
+    """
+    presets = load_presets()
+    preset_data = presets.get(name)
+    
+    if preset_data is None:
+        return None
+    
+    # Handle legacy format (float) - convert to new format
+    if isinstance(preset_data, (int, float)):
+        return {
+            'aspect_ratio': float(preset_data),
+            'anchor': 'Center'  # Default anchor for legacy presets
+        }
+    
+    # Handle new format (dict)
+    if isinstance(preset_data, dict):
+        return {
+            'aspect_ratio': preset_data.get('aspect_ratio'),
+            'anchor': preset_data.get('anchor', 'Center')
+        }
+    
+    return None
 
 
 def format_aspect_ratio(ratio: float) -> str:

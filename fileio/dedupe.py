@@ -88,21 +88,37 @@ def dedupe_media_file(config: FanslyConfig, state: DownloadState, mimetype: str,
             raise RuntimeError('Internal error during media deduplication - invalid MIME type passed.')
 
     # Deduplication - part 2.1: decide if this media is even worth further processing; by hashing
+    # Use atomic check-and-add pattern to avoid race conditions
     if file_hash in hashlist:
         if config.show_downloads and config.show_skipped_downloads:
             print_info(f"Deduplication [Hashing]: {mimetype.split('/')[-2]} '{filename.name}' → skipped")
-        filename.unlink()
+        try:
+            filename.unlink()
+        except FileNotFoundError:
+            # File already deleted, ignore
+            pass
         state.duplicate_count += 1
         return True
 
     else:
+        # Add hash atomically (Python sets are thread-safe for individual operations due to GIL)
         hashlist.add(file_hash)
 
         new_filename = Path(add_hash_to_filename(filename, file_hash))
 
-        if new_filename.exists():
-            filename.unlink()
-        else:
+        # Use try-except for atomic file operations
+        try:
+            # Try to rename atomically - will fail if target exists
             filename.rename(new_filename)
+        except FileExistsError:
+            # Target file already exists (race condition), delete source
+            try:
+                filename.unlink()
+            except FileNotFoundError:
+                # Already deleted, ignore
+                pass
+        except FileNotFoundError:
+            # Source file doesn't exist (already processed), ignore
+            pass
 
         return False

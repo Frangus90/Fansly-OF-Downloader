@@ -222,19 +222,33 @@ class AuthSection(ctk.CTkFrame):
         """Save values to config"""
         token = self.token_entry.get().strip()
 
+        # Limit input size to prevent DoS attacks
+        MAX_INPUT_SIZE = 10 * 1024  # 10KB max
+        if len(token) > MAX_INPUT_SIZE:
+            token = token[:MAX_INPUT_SIZE]
+
         # Try to parse as JSON (in case user copied the entire cookie value)
         if token.startswith('{') and token.endswith('}'):
             try:
                 import json
+                # Limit JSON parsing to prevent memory exhaustion
+                if len(token) > MAX_INPUT_SIZE:
+                    raise ValueError("Token too large for JSON parsing")
                 token_data = json.loads(token)
                 if 'token' in token_data:
-                    token = token_data['token']
-            except json.JSONDecodeError:
-                pass  # Not valid JSON, use as-is
+                    extracted_token = token_data['token']
+                    # Validate extracted token size
+                    if isinstance(extracted_token, str) and len(extracted_token) <= MAX_INPUT_SIZE:
+                        token = extracted_token
+            except (json.JSONDecodeError, ValueError, TypeError):
+                pass  # Not valid JSON or too large, use as-is
 
         config.token = token
         user_agent = self.user_agent_entry.get().strip()
         if user_agent:
+            # Limit user agent size
+            if len(user_agent) > MAX_INPUT_SIZE:
+                user_agent = user_agent[:MAX_INPUT_SIZE]
             config.user_agent = user_agent
 
     def validate(self):

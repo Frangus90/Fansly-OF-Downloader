@@ -16,7 +16,7 @@ from gui.tools.batch_queue_panel import BatchQueuePanel
 from gui.tools import dialogs
 
 from imageprocessing import ImageProcessor, ImageTask
-from imageprocessing.presets import get_preset_aspect_ratio
+from imageprocessing.presets import get_preset_aspect_ratio, get_preset_anchor, get_preset_data
 
 # Try to import tkinterdnd2 for drag-and-drop support
 try:
@@ -298,12 +298,31 @@ class ImageCropWindow(ctk.CTkToplevel):
 
     def _on_preset_changed(self, preset_name: str):
         """Handle preset selection change"""
-        # Get aspect ratio for this preset
-        ratio = get_preset_aspect_ratio(preset_name)
+        # Get preset data (aspect ratio and anchor)
+        preset_data = get_preset_data(preset_name)
+        if not preset_data:
+            return
+        
+        ratio = preset_data.get('aspect_ratio')
+        anchor = preset_data.get('anchor', 'Center')
+        
         if ratio:
-            # Apply this ratio to current image
-            self.crop_canvas.set_aspect_ratio(ratio)
-            self.crop_canvas.update_crop_for_target_size(int(ratio * 1000), 1000)
+            # Update anchor dropdown to match preset
+            self.settings_panel.anchor_var.set(anchor)
+            
+            # Check if lock is enabled before applying aspect ratio
+            settings = self.settings_panel.get_settings()
+            if settings['lock_aspect']:
+                # Lock is enabled - apply aspect ratio lock
+                self.crop_canvas.set_aspect_ratio(ratio)
+            else:
+                # Lock is disabled - don't set aspect ratio lock
+                self.crop_canvas.set_aspect_ratio(None)
+            
+            # Apply preset to current image with the saved anchor
+            # This calculates and sets the crop box with the correct aspect ratio and alignment
+            if self.current_image_index >= 0 and self.loaded_images:
+                self._apply_aspect_ratio_to_current_image(ratio, anchor)
 
     def _on_settings_changed(self):
         """Handle settings change"""
@@ -318,6 +337,63 @@ class ImageCropWindow(ctk.CTkToplevel):
         else:
             # Lock is OFF - clear aspect ratio
             self.crop_canvas.set_aspect_ratio(None)
+
+    def _apply_aspect_ratio_to_current_image(self, ratio: float, anchor: str):
+        """Apply aspect ratio and anchor to the current image only"""
+        if self.current_image_index < 0 or not self.loaded_images:
+            return
+        
+        filepath = self.loaded_images[self.current_image_index]
+        
+        try:
+            with Image.open(filepath) as img:
+                img_w, img_h = img.size
+
+            # Calculate largest crop box with this aspect ratio that fits
+            if ratio > img_w / img_h:
+                # Image is taller than target ratio - crop height
+                crop_w = img_w
+                crop_h = int(img_w / ratio)
+            else:
+                # Image is wider than target ratio - crop width
+                crop_h = img_h
+                crop_w = int(img_h * ratio)
+
+            # Position crop box based on anchor
+            if anchor == "Center":
+                x1 = (img_w - crop_w) // 2
+                y1 = (img_h - crop_h) // 2
+            elif anchor == "Top":
+                x1 = (img_w - crop_w) // 2
+                y1 = 0
+            elif anchor == "Bottom":
+                x1 = (img_w - crop_w) // 2
+                y1 = img_h - crop_h
+            elif anchor == "Left":
+                x1 = 0
+                y1 = (img_h - crop_h) // 2
+            elif anchor == "Right":
+                x1 = img_w - crop_w
+                y1 = (img_h - crop_h) // 2
+            else:
+                # Default to center
+                x1 = (img_w - crop_w) // 2
+                y1 = (img_h - crop_h) // 2
+
+            x2 = x1 + crop_w
+            y2 = y1 + crop_h
+
+            # Store settings for this image
+            self.image_crop_settings[self.current_image_index] = {
+                'crop_rect': (x1, y1, x2, y2),
+                'aspect_ratio': ratio
+            }
+            
+            # Update canvas to show the new crop
+            self.crop_canvas.set_crop_from_coordinates((x1, y1, x2, y2))
+            
+        except Exception as e:
+            print(f"Error applying aspect ratio to current image: {e}")
 
     def _on_aspect_ratio_applied(self, ratio: float):
         """Handle aspect ratio input - apply to ALL images in queue"""
@@ -382,11 +458,15 @@ class ImageCropWindow(ctk.CTkToplevel):
                 print(f"Error calculating crop for {filepath}: {e}")
                 continue
 
-        # Set aspect ratio lock on canvas
-        self.crop_canvas.set_aspect_ratio(ratio)
-
-        # Check the lock checkbox to reflect that aspect ratio is now locked
-        self.settings_panel.lock_aspect_var.set(True)
+        # Only set aspect ratio lock if checkbox is currently checked
+        # Don't force the checkbox state - respect user's choice
+        settings = self.settings_panel.get_settings()
+        if settings['lock_aspect']:
+            # Lock is enabled - apply aspect ratio lock
+            self.crop_canvas.set_aspect_ratio(ratio)
+        else:
+            # Lock is disabled - don't lock aspect ratio
+            self.crop_canvas.set_aspect_ratio(None)
 
         # Reload current image to show the new crop
         if self.current_image_index >= 0:

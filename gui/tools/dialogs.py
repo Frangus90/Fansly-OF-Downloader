@@ -204,16 +204,16 @@ class CTkInputDialog(ctk.CTkToplevel):
         main_frame = ctk.CTkFrame(self)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
-        # Prompt label
+        # Prompt label with better formatting support
         prompt_label = ctk.CTkLabel(
             main_frame,
             text=prompt,
             font=("Arial", 12),
             justify="left",
-            anchor="w",
-            wraplength=300,
+            anchor="nw",
+            wraplength=350,
         )
-        prompt_label.pack(fill="x", pady=(0, 10))
+        prompt_label.pack(fill="x", pady=(0, 10), anchor="w")
 
         # Input entry
         self.entry_var = ctk.StringVar(value=initial_value)
@@ -288,6 +288,179 @@ class CTkInputDialog(ctk.CTkToplevel):
 def ask_string(parent, title: str, prompt: str, initial_value: str = "") -> Optional[str]:
     """Show input dialog, returns string or None if cancelled"""
     dialog = CTkInputDialog(parent, title, prompt, initial_value)
+    return dialog.get_result()
+
+
+class CTkPresetSaveDialog(ctk.CTkToplevel):
+    """Custom dialog for saving presets with visual indicators"""
+
+    def __init__(self, parent, aspect_ratio: float, anchor: str, format_aspect_ratio_func):
+        super().__init__(parent)
+
+        self.result = None
+
+        # Window setup
+        self.title("Save Preset")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+        self.attributes('-topmost', True)
+
+        # Build UI
+        self._build_ui(aspect_ratio, anchor, format_aspect_ratio_func)
+
+        # Center on parent
+        self.update_idletasks()
+        self._center_on_parent(parent)
+
+        # Handle close
+        self.protocol("WM_DELETE_WINDOW", self._on_cancel)
+        self.bind("<Escape>", lambda e: self._on_cancel())
+
+    def _build_ui(self, aspect_ratio: float, anchor: str, format_aspect_ratio_func):
+        """Build preset save dialog UI"""
+        main_frame = ctk.CTkFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Title
+        title_label = ctk.CTkLabel(
+            main_frame,
+            text="Enter a name for this preset:",
+            font=("Arial", 13, "bold"),
+            anchor="w"
+        )
+        title_label.pack(fill="x", pady=(0, 15), anchor="w")
+
+        # Info box showing what will be saved
+        info_frame = ctk.CTkFrame(main_frame, fg_color="#1a1a1a", corner_radius=8)
+        info_frame.pack(fill="x", pady=(0, 15))
+
+        info_title = ctk.CTkLabel(
+            info_frame,
+            text="Will be saved with:",
+            font=("Arial", 11, "bold"),
+            text_color="#3b8ed0",
+            anchor="w"
+        )
+        info_title.pack(fill="x", padx=15, pady=(12, 8), anchor="w")
+
+        # Aspect ratio indicator
+        ratio_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
+        ratio_frame.pack(fill="x", padx=15, pady=(0, 5))
+
+        ratio_label = ctk.CTkLabel(
+            ratio_frame,
+            text="Aspect Ratio:",
+            font=("Arial", 11),
+            width=100,
+            anchor="w"
+        )
+        ratio_label.pack(side="left")
+
+        ratio_value = ctk.CTkLabel(
+            ratio_frame,
+            text=format_aspect_ratio_func(aspect_ratio),
+            font=("Arial", 11, "bold"),
+            text_color="#28a745",
+            anchor="w"
+        )
+        ratio_value.pack(side="left", padx=(10, 0))
+
+        # Alignment indicator
+        anchor_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
+        anchor_frame.pack(fill="x", padx=15, pady=(0, 12))
+
+        anchor_label = ctk.CTkLabel(
+            anchor_frame,
+            text="Alignment:",
+            font=("Arial", 11),
+            width=100,
+            anchor="w"
+        )
+        anchor_label.pack(side="left")
+
+        anchor_value = ctk.CTkLabel(
+            anchor_frame,
+            text=anchor,
+            font=("Arial", 11, "bold"),
+            text_color="#28a745",
+            anchor="w"
+        )
+        anchor_value.pack(side="left", padx=(10, 0))
+
+        # Input entry
+        self.entry_var = ctk.StringVar(value="")
+        self.entry = ctk.CTkEntry(
+            main_frame,
+            textvariable=self.entry_var,
+            width=350,
+            height=35,
+            placeholder_text="Preset name..."
+        )
+        self.entry.pack(fill="x", pady=(0, 15))
+        self.entry.focus_set()
+
+        # Bind Enter to OK
+        self.entry.bind("<Return>", lambda e: self._on_ok())
+
+        # Buttons frame
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x")
+
+        ok_btn = ctk.CTkButton(
+            button_frame,
+            text="Save",
+            command=self._on_ok,
+            width=80,
+            height=32,
+        )
+        ok_btn.pack(side="right", padx=(5, 0))
+
+        cancel_btn = ctk.CTkButton(
+            button_frame,
+            text="Cancel",
+            command=self._on_cancel,
+            width=80,
+            height=32,
+            fg_color="transparent",
+            border_width=1,
+            border_color="#3b8ed0",
+            text_color="#3b8ed0",
+        )
+        cancel_btn.pack(side="right")
+
+    def _center_on_parent(self, parent):
+        """Center dialog on parent window"""
+        self.update_idletasks()
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+        parent_w = parent.winfo_width()
+        parent_h = parent.winfo_height()
+        dialog_w = self.winfo_width()
+        dialog_h = self.winfo_height()
+        x = parent_x + (parent_w - dialog_w) // 2
+        y = parent_y + (parent_h - dialog_h) // 2
+        self.geometry(f"+{x}+{y}")
+
+    def _on_ok(self):
+        """Handle OK button"""
+        self.result = self.entry_var.get()
+        self.destroy()
+
+    def _on_cancel(self):
+        """Handle cancel"""
+        self.result = None
+        self.destroy()
+
+    def get_result(self) -> Optional[str]:
+        """Wait for dialog and return result"""
+        self.wait_window()
+        return self.result
+
+
+def ask_preset_name(parent, aspect_ratio: float, anchor: str, format_aspect_ratio_func) -> Optional[str]:
+    """Show preset save dialog with visual indicators, returns preset name or None if cancelled"""
+    dialog = CTkPresetSaveDialog(parent, aspect_ratio, anchor, format_aspect_ratio_func)
     return dialog.get_result()
 
 

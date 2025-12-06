@@ -10,7 +10,7 @@ from .media import download_media
 from .types import DownloadType
 
 from config import FanslyConfig
-from errors import DuplicateCountError, ApiError
+from errors import DuplicateCountError, ApiError, DownloadError, MediaError, M3U8Error
 from media import MediaItem, parse_media_info
 from pathio import set_create_directory_for_download
 from textio import print_error, print_info, print_warning, print_debug, input_enter_continue
@@ -147,7 +147,9 @@ def process_download_accessible_media(
         # Overwrite base dup threshold with 20% of total accessible content in messages.
         # Cap at 150 to prevent excessive API calls on large message libraries.
         # Don't forget to save/reset afterwards.
-        calculated_threshold = int(0.2 * state.total_message_items)
+        # Ensure total_message_items is non-negative to avoid incorrect calculations
+        total_items = max(0, state.total_message_items)
+        calculated_threshold = int(0.2 * total_items)
         config.DUPLICATE_THRESHOLD = min(calculated_threshold, 150)
 
     # at this point we have already parsed the whole post object and determined what is scrapable with the code above
@@ -165,8 +167,16 @@ def process_download_accessible_media(
         if state.download_type == DownloadType.TIMELINE:
             return False
 
-    except Exception:
-        print_error(f"Unexpected error during {state.download_type_str()} download: \n{traceback.format_exc()}", 43)
+    except (DownloadError, MediaError, M3U8Error) as e:
+        print_error(f"Media download error during {state.download_type_str()} download: {e}\n{traceback.format_exc()}", 43)
+        input_enter_continue(config.interactive)
+
+    except ApiError as e:
+        print_error(f"API error during {state.download_type_str()} download: {e}\n{traceback.format_exc()}", 43)
+        input_enter_continue(config.interactive)
+
+    except Exception as e:
+        print_error(f"Unexpected error during {state.download_type_str()} download (type: {type(e).__name__}): {e}\n{traceback.format_exc()}", 43)
         input_enter_continue(config.interactive)
 
     finally:

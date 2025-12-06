@@ -27,17 +27,23 @@ def parse_variant_metadata(variant_metadata_json: str):
 
     variant_metadata = json.loads(variant_metadata_json)
 
-    max_variant = max(variant_metadata['variants'], key=lambda variant: variant['h'], default=None)
+    variants = variant_metadata.get('variants', [])
+    if not variants:
+        return 1080
+
+    max_variant = max(variants, key=lambda variant: variant.get('h', 0), default=None)
 
     # if a highest height is not found, we just hope 1080p is available
     if not max_variant:
         return 1080
 
     # else parse through variants and find highest height
-    if max_variant['w'] < max_variant['h']:
-        max_variant['w'], max_variant['h'] = max_variant['h'], max_variant['w']
+    w = max_variant.get('w', 0)
+    h = max_variant.get('h', 0)
+    if w < h:
+        max_variant['w'], max_variant['h'] = h, w
 
-    return max_variant['h']
+    return max_variant.get('h', 1080)
 
 
 # TODO: Enums in Python for content_type?
@@ -52,36 +58,48 @@ def parse_variants(item: MediaItem, content: dict, content_type: str, media_info
     :return: None.
     """
     
-    if content.get('locations'):
-        location_url: str = content['locations'][0]['location']
+    locations = content.get('locations', [])
+    if locations and len(locations) > 0:
+        location_data = locations[0]
+        location_url: str = location_data.get('location', '')
 
-        current_variant_resolution = (content['width'] or 0) * (content['height'] or 0)
+        if not location_url:
+            return
 
+        current_variant_resolution = (content.get('width', 0) or 0) * (content.get('height', 0) or 0)
+
+        content_mimetype = content.get('mimetype', '')
         if current_variant_resolution > item.highest_variants_resolution \
-                and item.default_normal_mimetype == simplify_mimetype(content['mimetype']):
+                and item.default_normal_mimetype == simplify_mimetype(content_mimetype):
 
             item.highest_variants_resolution = current_variant_resolution
-            item.highest_variants_resolution_height = content['height'] or 0
+            item.highest_variants_resolution_height = content.get('height', 0) or 0
             item.highest_variants_resolution_url = location_url
 
-            item.media_id = int(content['id'])
-            item.mimetype = simplify_mimetype(content['mimetype'])
+            item.media_id = int(content.get('id', 0))
+            item.mimetype = simplify_mimetype(content_mimetype)
 
             # if key-pair-id is not in there we'll know it's the new .m3u8 format, so we construct a generalised url, which we can pass relevant auth strings with
             # note: this url won't actually work, its purpose is to just pass the strings through the download_url variable
             if item.highest_variants_resolution_url is not None and \
-                    not 'Key-Pair-Id' in item.highest_variants_resolution_url:
+                    'Key-Pair-Id' not in item.highest_variants_resolution_url:
                 try:
                     # use very specific metadata, bound to the specific media to get auth info
-                    item.metadata = content['locations'][0]['metadata']
+                    if locations and len(locations) > 0:
+                        metadata = locations[0].get('metadata')
+                        if metadata:
+                            item.metadata = metadata
 
-                    # item.highest_variants_resolution_url = \
-                    #     f"{item.highest_variants_resolution_url.split('.m3u8')[0]}_{parse_variant_metadata(content['metadata'])}.m3u8?ngsw-bypass=true&Policy={item.metadata['Policy']}&Key-Pair-Id={item.metadata['Key-Pair-Id']}&Signature={item.metadata['Signature']}"
+                            # Validate required metadata keys exist
+                            policy = metadata.get('Policy')
+                            key_pair_id = metadata.get('Key-Pair-Id')
+                            signature = metadata.get('Signature')
 
-                    item.highest_variants_resolution_url = \
-                        f"{item.highest_variants_resolution_url}?ngsw-bypass=true&Policy={item.metadata['Policy']}&Key-Pair-Id={item.metadata['Key-Pair-Id']}&Signature={item.metadata['Signature']}"
+                            if policy and key_pair_id and signature:
+                                item.highest_variants_resolution_url = \
+                                    f"{item.highest_variants_resolution_url}?ngsw-bypass=true&Policy={policy}&Key-Pair-Id={key_pair_id}&Signature={signature}"
 
-                except KeyError:
+                except (KeyError, TypeError, AttributeError):
                     # we pass here and catch below
                     pass
 
@@ -97,10 +115,11 @@ def parse_variants(item: MediaItem, content: dict, content_type: str, media_info
             else we would be forced to add randint(-1800, 1800) to epoch timestamps
             """
             try:
-                item.created_at = int(content['updatedAt'])
-
-            except Exception:
-                item.created_at = int(media_info[content_type]['createdAt'])
+                item.created_at = int(content.get('updatedAt', 0))
+            except (ValueError, TypeError):
+                # Fallback to media_info
+                content_type_data = media_info.get(content_type, {})
+                item.created_at = int(content_type_data.get('createdAt', 0))
 
     item.download_url = item.highest_variants_resolution_url
 
@@ -118,50 +137,53 @@ def parse_media_info(
     item = MediaItem()
 
     # check if media is a preview
-    item.is_preview = media_info['previewId'] is not None
+    item.is_preview = media_info.get('previewId') is not None
     
     # fix rare bug, of free / paid content being counted as preview
     if item.is_preview:
-        if media_info['access']:
+        if media_info.get('access', False):
             item.is_preview = False
 
     # variables in api "media" = "default_" & "preview" = "preview" in our code
     # parse normal basic (paid/free) media from the default location, before parsing its variants
     # (later on we compare heights, to determine which one we want)
     if not item.is_preview:
-        default_details = media_info['media']
+        default_details = media_info.get('media', {})
 
-        item.default_normal_locations = media_info['media']['locations']
-        item.default_normal_id = int(default_details['id'])
-        item.default_normal_created_at = int(default_details['createdAt'])
-        item.default_normal_mimetype = simplify_mimetype(default_details['mimetype'])
-        item.default_normal_height = default_details['height'] or 0
+        item.default_normal_locations = media_info.get('media', {}).get('locations', [])
+        item.default_normal_id = int(default_details.get('id', 0))
+        item.default_normal_created_at = int(default_details.get('createdAt', 0))
+        item.default_normal_mimetype = simplify_mimetype(default_details.get('mimetype', ''))
+        item.default_normal_height = default_details.get('height', 0) or 0
 
     # if its a preview, we take the default preview media instead
     else:
-        default_details = media_info['preview']
+        default_details = media_info.get('preview', {})
 
-        item.default_normal_locations = media_info['preview']['locations']
-        item.default_normal_id = int(media_info['preview']['id'])
-        item.default_normal_created_at = int(default_details['createdAt'])
-        item.default_normal_mimetype = simplify_mimetype(default_details['mimetype'])
-        item.default_normal_height = default_details['height'] or 0
+        item.default_normal_locations = media_info.get('preview', {}).get('locations', [])
+        item.default_normal_id = int(media_info.get('preview', {}).get('id', 0))
+        item.default_normal_created_at = int(default_details.get('createdAt', 0))
+        item.default_normal_mimetype = simplify_mimetype(default_details.get('mimetype', ''))
+        item.default_normal_height = default_details.get('height', 0) or 0
 
-    if default_details['locations']:
-        item.default_normal_locations = default_details['locations'][0]['location']
+    locations_list = default_details.get('locations', [])
+    if locations_list and len(locations_list) > 0:
+        item.default_normal_locations = locations_list[0].get('location', '')
 
     # Variants functions extracted here
 
     # somehow unlocked / paid media: get download url from media location
-    if 'location' in media_info['media']:
-        variants = media_info['media']['variants']
+    media_data = media_info.get('media', {})
+    if 'location' in media_data:
+        variants = media_data.get('variants', [])
 
         for content in variants:
             parse_variants(item, content=content, content_type='media', media_info=media_info)
 
     # previews: if media location is not found, we work with the preview media info instead
     if not item.download_url and 'preview' in media_info:
-        variants = media_info['preview']['variants']
+        preview_data = media_info.get('preview', {})
+        variants = preview_data.get('variants', [])
 
         for content in variants:
             parse_variants(item, content=content, content_type='preview', media_info=media_info)
@@ -201,9 +223,14 @@ def parse_media_info(
             item.file_extension = 'mp3'
 
         # if metadata didn't exist we need the user to notify us through github, because that would be detrimental
-        if not 'Key-Pair-Id' in item.download_url and not item.metadata:
-            print_error(f"Failed downloading a video! Please open a GitHub issue ticket called 'Metadata missing' and copy paste this:\n\
-                \n\tMetadata Missing\n\tpost_id: {post_id} & media_id: {item.media_id} & creator username: {state.creator_name}\n", 14)
+        if item.download_url and 'Key-Pair-Id' not in item.download_url and not item.metadata:
+            error_details = (
+                "Failed downloading a video! Please open a GitHub issue ticket called 'Metadata missing' "
+                "and copy paste this:\n\n"
+                f"\tMetadata Missing\n"
+                f"\tpost_id: {post_id} & media_id: {item.media_id} & creator username: {state.creator_name}\n"
+            )
+            print_error(error_details, 14)
             input('Press Enter to attempt continue downloading ...')
     
     return item

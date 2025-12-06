@@ -214,6 +214,9 @@ def add_hash_to_file(config: FanslyConfig, state: DownloadState, file_path: Path
 def add_hash_to_folder_items(config: FanslyConfig, state: DownloadState) -> None:
     """Recursively adds hashes to all media files in the folder and
     it's sub-folders.
+    
+    Note: Python sets are thread-safe for individual operations due to GIL,
+    but we still need to be careful with file operations.
     """
 
     if state.download_path is None:
@@ -221,7 +224,9 @@ def add_hash_to_folder_items(config: FanslyConfig, state: DownloadState) -> None
 
     # Beware - thread pools may silently swallow exceptions!
     # https://docs.python.org/3/library/concurrent.futures.html
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    # Note: Using max_workers to limit concurrent file operations and reduce race conditions
+    max_workers = min(8, (os.cpu_count() or 1) + 4)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
 
         for root, _, files in os.walk(state.download_path):
             
@@ -240,7 +245,11 @@ def add_hash_to_folder_items(config: FanslyConfig, state: DownloadState) -> None
 
                 # Iterate over the future results so exceptions will be thrown
                 for future in futures:
-                    future.result()
+                    try:
+                        future.result()
+                    except Exception as e:
+                        # Log but continue processing other files
+                        print_error(f"Error processing file in hash operation: {e}")
 
                 if config.debug:
                     print()

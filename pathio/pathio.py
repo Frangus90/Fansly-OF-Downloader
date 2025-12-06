@@ -56,13 +56,45 @@ def set_create_directory_for_download(config: FanslyConfig, state: DownloadState
         raise RuntimeError(message)
 
     else:
+        import os
+        import platform
 
         suffix = ''
 
         if config.use_folder_suffix:
             suffix = '_fansly'
 
-        user_base_path = config.download_directory / f'{state.creator_name}{suffix}'
+        # Sanitize creator name for filesystem safety
+        creator_name = state.creator_name
+        
+        # Windows reserved names and characters
+        if platform.system() == 'Windows':
+            # Windows reserved names (case-insensitive)
+            reserved_names = {'CON', 'PRN', 'AUX', 'NUL',
+                            'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
+                            'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'}
+            
+            # Check if creator name matches reserved name
+            if creator_name.upper() in reserved_names:
+                creator_name = f"_{creator_name}"
+            
+            # Remove invalid characters for Windows
+            invalid_chars = '<>:"|?*'
+            for char in invalid_chars:
+                creator_name = creator_name.replace(char, '_')
+        
+        # Limit path length to prevent filesystem issues
+        # Windows MAX_PATH is 260, but we need room for subdirectories and filenames
+        max_name_length = 200
+        if len(creator_name) > max_name_length:
+            creator_name = creator_name[:max_name_length]
+        
+        # Remove leading/trailing dots and spaces (Windows doesn't allow these)
+        creator_name = creator_name.strip('. ')
+        if not creator_name:  # If name becomes empty after sanitization
+            creator_name = "unknown_creator"
+
+        user_base_path = config.download_directory / f'{creator_name}{suffix}'
 
         user_base_path.mkdir(parents=True, exist_ok=True)
 

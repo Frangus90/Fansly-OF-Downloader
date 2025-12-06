@@ -479,7 +479,6 @@ def map_args_to_config(args: argparse.Namespace, config: FanslyConfig) -> bool:
         ('no_open_folder', 'open_folder_when_finished'),
         ('no_separate_messages', 'separate_messages'),
         ('no_separate_timeline', 'separate_timeline'),
-        ('no_separate_messages', 'separate_messages'),
     ]
 
     # Set config to the inverse (negation) of arguments that are True

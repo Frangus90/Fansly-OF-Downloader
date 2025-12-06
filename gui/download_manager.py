@@ -95,10 +95,22 @@ class DownloadManager:
                 self.log_callback("Download complete!", "info")
 
         except Exception as ex:
-            error_msg = f"Download error: {ex}"
+            # Import error types here to avoid circular imports
+            from errors import ApiError, DownloadError, ConfigError, MediaError
+            
+            error_type = type(ex).__name__
+            error_msg = f"Download error ({error_type}): {ex}"
             self.log_callback(error_msg, "error")
+            
+            # Provide more specific error messages based on exception type
+            if isinstance(ex, (ApiError, DownloadError, MediaError, ConfigError)):
+                detailed_msg = f"{error_type}: {ex}"
+            else:
+                import traceback
+                detailed_msg = f"Unexpected {error_type}: {ex}\n{traceback.format_exc()}"
+            
             self._send_progress(
-                ProgressUpdate(type="error", status="error", message=str(ex))
+                ProgressUpdate(type="error", status="error", message=detailed_msg)
             )
 
         finally:

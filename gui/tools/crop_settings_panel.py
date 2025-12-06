@@ -9,6 +9,8 @@ from gui.tools import dialogs
 from imageprocessing.presets import (
     get_preset_names,
     get_preset_aspect_ratio,
+    get_preset_anchor,
+    get_preset_data,
     add_preset,
     remove_preset,
     format_aspect_ratio,
@@ -401,7 +403,7 @@ class CropSettingsPanel(ctk.CTkFrame):
             )
 
     def _on_preset_selected(self, preset_name: str):
-        """Handle preset dropdown selection - fills in aspect ratio box"""
+        """Handle preset dropdown selection - fills in aspect ratio box and anchor"""
         if preset_name == "(No presets)":
             return
 
@@ -410,6 +412,11 @@ class CropSettingsPanel(ctk.CTkFrame):
         if ratio:
             # Fill in the aspect ratio input box
             self.aspect_ratio_var.set(f"{ratio:.3f}")
+        
+        # Get anchor for this preset and set it
+        anchor = get_preset_anchor(preset_name)
+        if anchor:
+            self.anchor_var.set(anchor)
 
     def _on_apply_preset(self):
         """Handle Apply preset button - applies selected preset"""
@@ -427,7 +434,7 @@ class CropSettingsPanel(ctk.CTkFrame):
             self.on_preset_change_callback(preset_name)
 
     def _on_save_preset(self):
-        """Save current aspect ratio as a new preset"""
+        """Save current aspect ratio and anchor as a new preset"""
         toplevel = self.winfo_toplevel()
 
         # Get current aspect ratio from label
@@ -444,11 +451,15 @@ class CropSettingsPanel(ctk.CTkFrame):
             dialogs.show_error(toplevel, "Error", "Could not determine current aspect ratio.")
             return
 
-        # Ask for preset name
-        name = dialogs.ask_string(
+        # Get current anchor/alignment
+        anchor = self.anchor_var.get()
+
+        # Use the enhanced preset save dialog with visual indicators
+        name = dialogs.ask_preset_name(
             toplevel,
-            "Save Preset",
-            f"Enter a name for this preset:\n(Aspect ratio: {format_aspect_ratio(ratio)})"
+            ratio,
+            anchor,
+            format_aspect_ratio
         )
 
         if name:
@@ -462,8 +473,8 @@ class CropSettingsPanel(ctk.CTkFrame):
                 if not dialogs.ask_yes_no(toplevel, "Overwrite", f"Preset '{name}' already exists. Overwrite?"):
                     return
 
-            # Save preset
-            if add_preset(name, ratio):
+            # Save preset with both aspect ratio and anchor
+            if add_preset(name, ratio, anchor):
                 dialogs.show_info(toplevel, "Saved", f"Preset '{name}' saved successfully.")
                 self._refresh_preset_dropdown()
                 self.preset_var.set(name)

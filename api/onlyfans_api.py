@@ -65,10 +65,18 @@ class OnlyFansApi:
         # If params provided, add them to URL NOW (before signature)
         # This ensures the signature includes the query string
         if 'params' in kwargs:
-            from urllib.parse import urlencode
+            from urllib.parse import urlencode, urlparse, urlunparse
             params = kwargs.pop('params')
             query_string = urlencode(params)
-            url = f"{url}?{query_string}"
+            
+            # Check if URL already has query parameters
+            parsed = urlparse(url)
+            if parsed.query:
+                # URL already has query params, append with &
+                url = f"{url}&{query_string}"
+            else:
+                # No existing query params, use ?
+                url = f"{url}?{query_string}"
 
         # Get auth headers and cookies
         headers = self.auth.get_headers(url)

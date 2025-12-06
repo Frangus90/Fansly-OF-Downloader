@@ -64,8 +64,7 @@ def validate_creator_names(config: FanslyConfig) -> bool:
     if len(config.user_names) == 0:
         return False
 
-    else:
-        return True
+    return True
 
 
 def validate_adjust_creator_name(name: str, interactive: bool=False) -> str | None:
