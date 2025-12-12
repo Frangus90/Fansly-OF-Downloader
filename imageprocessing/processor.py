@@ -243,7 +243,10 @@ class ImageProcessor:
 
                 # Save with optional file size compression
                 compression_target = task.target_file_size_mb if task.enable_size_compression else None
-                save_image(image, output_path, task.format, task.quality, compression_target)
+                save_image(
+                    image, output_path, task.format, task.quality,
+                    compression_target, source_filepath=task.filepath
+                )
                 output_files.append(output_path)
 
                 # Update progress
@@ -294,7 +297,10 @@ class ImageProcessor:
 
             # Save with optional file size compression
             compression_target = task.target_file_size_mb if task.enable_size_compression else None
-            save_image(image, output_path, task.format, task.quality, compression_target)
+            save_image(
+                image, output_path, task.format, task.quality,
+                compression_target, source_filepath=task.filepath
+            )
             return True
 
         except Exception:

@@ -166,7 +166,8 @@ def compress_to_target_size(
     format: str,
     target_size_mb: float,
     min_quality: int = MIN_COMPRESSION_QUALITY,
-    max_iterations: int = MAX_COMPRESSION_ITERATIONS
+    max_iterations: int = MAX_COMPRESSION_ITERATIONS,
+    source_filepath: Optional[Path] = None
 ) -> dict:
     """
     Compress image to target file size using binary search.
@@ -178,6 +179,7 @@ def compress_to_target_size(
         target_size_mb: Target file size in megabytes
         min_quality: Minimum quality to try (1-100)
         max_iterations: Maximum compression attempts
+        source_filepath: Original file path (for size check optimization)
 
     Returns:
         dict with keys:
@@ -187,6 +189,8 @@ def compress_to_target_size(
             - 'message': str - Status message
             - 'suggested_dimensions': Optional[Tuple[int, int]] - If target not met
     """
+    import os
+
     format = format.upper()
 
     if format not in ('JPEG', 'WEBP'):
@@ -212,6 +216,48 @@ def compress_to_target_size(
             image = background
         elif image.mode != 'RGB':
             image = image.convert('RGB')
+
+    # Early check: Is image already under target size?
+    # Use source file size if available (instant), otherwise encode at q=100
+    current_size_bytes = None
+
+    if source_filepath and source_filepath.exists():
+        # Check if source format matches output format (otherwise sizes won't match)
+        source_ext = source_filepath.suffix.lower()
+        format_matches = (
+            (format == 'JPEG' and source_ext in ('.jpg', '.jpeg')) or
+            (format == 'WEBP' and source_ext == '.webp')
+        )
+        if format_matches:
+            current_size_bytes = os.path.getsize(source_filepath)
+
+    if current_size_bytes is None:
+        # Encode at quality=100 to check size
+        buffer = BytesIO()
+        if format == 'JPEG':
+            image.save(buffer, format=format, quality=100, optimize=True)
+        else:
+            image.save(buffer, format=format, quality=100)
+        current_size_bytes = buffer.tell()
+
+    # If already under target, save at max quality and return early
+    if current_size_bytes <= target_size_bytes:
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        if format == 'JPEG':
+            image.save(filepath, format=format, quality=100, optimize=True)
+        else:
+            image.save(filepath, format=format, quality=100)
+
+        final_size_bytes = filepath.stat().st_size
+        final_size_mb = final_size_bytes / (1024 * 1024)
+
+        return {
+            'success': True,
+            'final_size_mb': final_size_mb,
+            'quality_used': 100,
+            'message': f'Already under target ({final_size_mb:.2f} MB), saved at quality 100',
+            'suggested_dimensions': None
+        }
 
     # Binary search for optimal quality
     low_quality = min_quality
@@ -320,7 +366,8 @@ def save_image(
     filepath: Path,
     format: str = 'JPEG',
     quality: int = 100,
-    target_size_mb: Optional[float] = None
+    target_size_mb: Optional[float] = None,
+    source_filepath: Optional[Path] = None
 ) -> Optional[dict]:
     """
     Save image to file with specified format and quality.
@@ -331,6 +378,7 @@ def save_image(
         format: Output format (JPEG, PNG, WEBP)
         quality: Quality for JPEG (1-100), ignored for PNG
         target_size_mb: Optional target file size in MB (JPEG/WEBP only)
+        source_filepath: Original file path (for compression size check optimization)
 
     Returns:
         Optional[dict]: Compression result if target_size_mb is provided, None otherwise
@@ -346,7 +394,10 @@ def save_image(
 
     # If target size is specified and format supports compression
     if target_size_mb is not None and format in ('JPEG', 'WEBP'):
-        return compress_to_target_size(image, filepath, format, target_size_mb)
+        return compress_to_target_size(
+            image, filepath, format, target_size_mb,
+            source_filepath=source_filepath
+        )
 
     # Ensure parent directory exists
     filepath.parent.mkdir(parents=True, exist_ok=True)
