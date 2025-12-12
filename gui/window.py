@@ -21,6 +21,9 @@ class MainWindow(ctk.CTk):
         self.geometry("900x1000")
         self.minsize(1000, 700)
 
+        # Set window icon (taskbar and title bar)
+        self._set_window_icon()
+
         # Initialize tkdnd for drag-and-drop support in child windows
         self._init_tkdnd()
 
@@ -203,6 +206,26 @@ class MainWindow(ctk.CTk):
                 os.system(f'xdg-open "{log_path}"')
         except Exception as e:
             log(f"Error opening log file: {e}")
+
+    def _set_window_icon(self):
+        """Set window icon for taskbar and title bar"""
+        import sys
+
+        icon_path = Path("resources") / "fansly_ng.ico"
+
+        # Check if running as frozen executable (PyInstaller)
+        if getattr(sys, 'frozen', False):
+            # Running in a bundle - icon should be in same dir as exe
+            icon_path = Path(sys._MEIPASS) / "resources" / "fansly_ng.ico"
+
+        # Set icon if file exists
+        if icon_path.exists():
+            try:
+                self.iconbitmap(str(icon_path))
+            except Exception as e:
+                log(f"Warning: Could not set window icon: {e}")
+        else:
+            log(f"Warning: Icon file not found at {icon_path}")
 
     def _init_tkdnd(self):
         """Initialize tkdnd for drag-and-drop support"""

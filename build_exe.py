@@ -29,10 +29,12 @@ def build_exe():
             "--name=FanslyOFDownloaderNG",  # Exe name (updated for both platforms)
             "--onefile",  # Single exe file
             "--windowed",  # No console window
-            "--icon=resources/fansly_ng.ico",  # Application icon
+            "--icon=resources/fansly_ng.ico",  # Application icon (file icon)
             # Config files
             "--add-data=config.sample.ini;.",  # Fansly sample config
             "--add-data=onlyfans_config.ini;.",  # OF config template
+            # Icon file (for runtime taskbar icon)
+            "--add-data=resources/fansly_ng.ico;resources",  # Include icon in bundle
             # Base packages
             "--hidden-import=customtkinter",  # Ensure CTk included
             "--hidden-import=PIL",  # Ensure Pillow included
