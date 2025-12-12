@@ -58,9 +58,6 @@ class CropSettingsPanel(ctk.CTkFrame):
         # Aspect Ratio section
         self._build_aspect_ratio_section()
 
-        # Options section
-        self._build_options_section()
-
         # Format section
         self._build_format_section()
 
@@ -250,48 +247,6 @@ class CropSettingsPanel(ctk.CTkFrame):
         )
         self.anchor_dropdown.pack(side="left", padx=5)
 
-    def _build_options_section(self):
-        """Build padding and other options"""
-        section = ctk.CTkFrame(self)
-        section.pack(fill="x", padx=10, pady=5)
-
-        label = ctk.CTkLabel(
-            section,
-            text="Options",
-            font=("Arial", 14, "bold"),
-            anchor="w"
-        )
-        label.pack(padx=10, pady=(10, 5), anchor="w")
-
-        # Padding
-        padding_label = ctk.CTkLabel(
-            section,
-            text="Padding (px):",
-            anchor="w"
-        )
-        padding_label.pack(padx=10, pady=(5, 0), anchor="w")
-
-        self.padding_var = ctk.IntVar(value=0)
-        self.padding_slider = ctk.CTkSlider(
-            section,
-            from_=0,
-            to=50,
-            number_of_steps=50,
-            variable=self.padding_var,
-            command=self._on_settings_changed
-        )
-        self.padding_slider.pack(padx=10, pady=2, fill="x")
-
-        self.padding_value_label = ctk.CTkLabel(
-            section,
-            text="0 px",
-            font=("Arial", 10),
-            text_color="gray60"
-        )
-        self.padding_value_label.pack(padx=10, pady=(0, 10))
-
-        # Bind padding slider to update label
-        self.padding_var.trace_add('write', self._update_padding_label)
 
     def _build_format_section(self):
         """Build format and quality section"""
@@ -367,6 +322,115 @@ class CropSettingsPanel(ctk.CTkFrame):
 
         # Bind quality slider to update label
         self.quality_var.trace_add('write', self._update_quality_label)
+
+        # File size compression section
+        self._build_compression_section()
+
+    def _build_compression_section(self):
+        """Build file size compression controls"""
+        section = ctk.CTkFrame(self)
+        section.pack(fill="x", padx=10, pady=5)
+
+        label = ctk.CTkLabel(
+            section,
+            text="File Size Compression",
+            font=("Arial", 14, "bold"),
+            anchor="w"
+        )
+        label.pack(padx=10, pady=(10, 5), anchor="w")
+
+        # Enable checkbox
+        self.enable_compression_var = ctk.BooleanVar(value=False)
+        self.enable_compression_check = ctk.CTkCheckBox(
+            section,
+            text="Enable file size compression",
+            variable=self.enable_compression_var,
+            command=self._on_compression_toggle
+        )
+        self.enable_compression_check.pack(padx=10, pady=5, anchor="w")
+
+        # Target size input frame
+        self.target_size_frame = ctk.CTkFrame(section)
+        self.target_size_frame.pack(fill="x", padx=10, pady=5)
+
+        # Label
+        target_label = ctk.CTkLabel(
+            self.target_size_frame,
+            text="Target size:",
+            anchor="w",
+            width=80
+        )
+        target_label.pack(side="left", padx=(0, 5))
+
+        # Dropdown with common sizes + custom option
+        self.target_size_var = ctk.StringVar(value="5 MB")
+        self.target_size_dropdown = ctk.CTkOptionMenu(
+            self.target_size_frame,
+            variable=self.target_size_var,
+            values=["1 MB", "2 MB", "5 MB", "10 MB", "20 MB", "Custom..."],
+            command=self._on_target_size_changed,
+            width=110
+        )
+        self.target_size_dropdown.pack(side="left", padx=5)
+
+        # Custom input (hidden by default)
+        self.custom_size_var = ctk.StringVar(value="5.0")
+        self.custom_size_entry = ctk.CTkEntry(
+            self.target_size_frame,
+            textvariable=self.custom_size_var,
+            width=60,
+            placeholder_text="5.0"
+        )
+
+        # Info label
+        self.compression_info_label = ctk.CTkLabel(
+            section,
+            text="Quality will be automatically adjusted to meet target size",
+            font=("Arial", 9),
+            text_color="gray60",
+            wraplength=200
+        )
+        self.compression_info_label.pack(padx=10, pady=(0, 5))
+
+        # Processing mode selection
+        mode_label = ctk.CTkLabel(
+            section,
+            text="Processing mode:",
+            anchor="w"
+        )
+        mode_label.pack(padx=10, pady=(5, 0), anchor="w")
+
+        self.processing_mode_var = ctk.StringVar(value="crop_and_compress")
+        mode_container = ctk.CTkFrame(section, fg_color="transparent")
+        mode_container.pack(fill="x", padx=10, pady=5)
+
+        # Radio buttons
+        crop_and_compress_radio = ctk.CTkRadioButton(
+            mode_container,
+            text="Crop + Compress",
+            variable=self.processing_mode_var,
+            value="crop_and_compress"
+        )
+        crop_and_compress_radio.pack(anchor="w", pady=2)
+
+        compress_only_radio = ctk.CTkRadioButton(
+            mode_container,
+            text="Compress Only (no crop)",
+            variable=self.processing_mode_var,
+            value="compress_only"
+        )
+        compress_only_radio.pack(anchor="w", pady=2)
+
+        crop_only_radio = ctk.CTkRadioButton(
+            mode_container,
+            text="Crop Only (no compression)",
+            variable=self.processing_mode_var,
+            value="crop_only"
+        )
+        crop_only_radio.pack(anchor="w", pady=2)
+
+        # Initially disable compression controls
+        self._toggle_compression_controls(False)
 
     def _browse_images(self):
         """Open file browser to select multiple images"""
@@ -510,16 +574,30 @@ class CropSettingsPanel(ctk.CTkFrame):
             self.preset_var.set("(No presets)")
 
     def _on_format_changed(self):
-        """Handle format selection change"""
+        """Handle format selection change and manage compression state"""
         format_val = self.format_var.get()
+        compression_enabled = self.enable_compression_var.get()
 
-        # Disable quality slider for PNG (lossless)
         if format_val == "PNG":
+            # PNG is lossless, disable both quality and compression
             self.quality_slider.configure(state="disabled")
             self.quality_value_label.configure(text="N/A (lossless)")
+            self.enable_compression_check.configure(state="disabled")
+            if compression_enabled:
+                self.enable_compression_var.set(False)
+                self._toggle_compression_controls(False)
         else:
-            self.quality_slider.configure(state="normal")
-            self._update_quality_label()
+            # JPEG/WebP support compression
+            self.enable_compression_check.configure(state="normal")
+
+            if compression_enabled:
+                # Compression is enabled, disable quality slider
+                self.quality_slider.configure(state="disabled")
+                self.quality_value_label.configure(text="Auto (size-based)")
+            else:
+                # Compression disabled, enable quality slider
+                self.quality_slider.configure(state="normal")
+                self._update_quality_label()
 
         self._on_settings_changed()
 
@@ -527,15 +605,37 @@ class CropSettingsPanel(ctk.CTkFrame):
         """Handle any settings change"""
         self.on_settings_change_callback()
 
-    def _update_padding_label(self, *args):
-        """Update padding value label"""
-        value = self.padding_var.get()
-        self.padding_value_label.configure(text=f"{value} px")
-
     def _update_quality_label(self, *args):
         """Update quality value label"""
         value = self.quality_var.get()
         self.quality_value_label.configure(text=f"{value}%")
+
+    def _on_compression_toggle(self):
+        """Handle compression checkbox toggle"""
+        enabled = self.enable_compression_var.get()
+        self._toggle_compression_controls(enabled)
+        self._on_format_changed()  # Update quality slider state
+
+    def _toggle_compression_controls(self, enabled: bool):
+        """Enable/disable compression controls"""
+        state = "normal" if enabled else "disabled"
+        self.target_size_dropdown.configure(state=state)
+
+        # Show/hide custom input if needed
+        if enabled and self.target_size_var.get() == "Custom...":
+            self.custom_size_entry.pack(side="left", padx=5)
+        else:
+            self.custom_size_entry.pack_forget()
+
+    def _on_target_size_changed(self, value: str):
+        """Handle target size dropdown change"""
+        if value == "Custom...":
+            # Show custom input
+            self.custom_size_entry.pack(side="left", padx=5)
+            self.custom_size_entry.focus_set()
+        else:
+            # Hide custom input
+            self.custom_size_entry.pack_forget()
 
     def _on_apply_aspect_ratio(self):
         """Parse and apply aspect ratio input to ALL images"""
@@ -591,12 +691,24 @@ class CropSettingsPanel(ctk.CTkFrame):
         Returns:
             Dictionary with all current settings
         """
+        # Parse target size
+        target_size_str = self.target_size_var.get()
+        if target_size_str == "Custom...":
+            try:
+                target_mb = float(self.custom_size_var.get())
+            except ValueError:
+                target_mb = 5.0
+        else:
+            target_mb = float(target_size_str.replace(" MB", ""))
+
         return {
             'preset': self.preset_var.get(),
             'lock_aspect': self.lock_aspect_var.get(),
-            'padding': self.padding_var.get(),
             'format': self.format_var.get(),
             'quality': self.quality_var.get(),
+            'enable_compression': self.enable_compression_var.get(),
+            'target_size_mb': target_mb,
+            'processing_mode': self.processing_mode_var.get(),
         }
 
     def get_current_aspect_ratio_input(self) -> Optional[float]:

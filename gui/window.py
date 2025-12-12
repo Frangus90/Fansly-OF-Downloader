@@ -105,7 +105,12 @@ class MainWindow(ctk.CTk):
         self.tab_view.add("OnlyFans")
 
         # Build Fansly UI in first tab
-        self.sections = build_layout(self.tab_view.tab("Fansly"), self.app_state, self.handlers)
+        self.sections = build_layout(
+            self.tab_view.tab("Fansly"),
+            self.app_state,
+            self.handlers,
+            toggle_log_callback=self.toggle_log_window
+        )
 
         # Build OnlyFans UI in second tab
         from gui.tabs.onlyfans_tab import build_onlyfans_layout
@@ -114,40 +119,66 @@ class MainWindow(ctk.CTk):
         self.of_app_state = OnlyFansAppState()
         from gui.handlers import OnlyFansEventHandlers
         self.of_handlers = OnlyFansEventHandlers(self.of_app_state, self)
-        self.of_sections = build_onlyfans_layout(self.tab_view.tab("OnlyFans"), self.of_app_state, self.of_handlers)
+        self.of_sections = build_onlyfans_layout(
+            self.tab_view.tab("OnlyFans"),
+            self.of_app_state,
+            self.of_handlers,
+            toggle_log_callback=self.toggle_log_window
+        )
         self.of_handlers.set_sections(self.of_sections)
 
         # Connect handlers to UI
         self.handlers.set_sections(self.sections)
 
+        # Create shared log window for both tabs
+        from gui.widgets.log_window import LogWindow
+        self.log_window = LogWindow(self)
+        self.sections["log"] = self.log_window     # Fansly tab
+        self.of_sections["log"] = self.log_window  # OnlyFans tab (shared)
+
         # Window events
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        # Add keyboard shortcut for log file (Ctrl+L)
-        self.bind("<Control-l>", lambda e: self.open_log_file())
-
-        # Add hint label at bottom of window
-        self._add_log_hint()
+        # Add keyboard shortcut for log window toggle (Ctrl+L)
+        self.bind("<Control-l>", lambda e: self.toggle_log_window())
 
         if wizard_was_completed:
             log("App initialization complete after wizard")
 
     def on_close(self):
         """Handle window close event"""
+        # Save log window state
+        if hasattr(self, 'log_window'):
+            self.log_window._save_window_state()
+
         # Save GUI state before closing
         self.app_state.save_gui_state()
         # Handle download stop if needed
         self.handlers.on_close()
 
-    def _add_log_hint(self):
-        """Add hint label at bottom showing how to access log"""
-        hint_label = ctk.CTkLabel(
-            self,
-            text="Press Ctrl+L to view diagnostic log",
-            font=("Arial", 10),
-            text_color="gray60"
-        )
-        hint_label.place(relx=0.5, rely=1.0, anchor="s", y=-5)
+    def toggle_log_window(self):
+        """Toggle log window visibility"""
+        if self.log_window.winfo_viewable():
+            self.log_window.withdraw()
+            # Update both tab buttons
+            self.sections["status"]["log_button"].configure(text="Show Log")
+            self.of_sections["status"]["log_button"].configure(text="Show Log")
+        else:
+            self.log_window.deiconify()
+            self.log_window.lift()
+
+            # Clear unread badge counts for both handlers
+            self.handlers.unread_warnings = 0
+            self.handlers.unread_errors = 0
+            self.handlers._update_log_button_badge()
+
+            self.of_handlers.unread_warnings = 0
+            self.of_handlers.unread_errors = 0
+            self.of_handlers._update_log_button_badge()
+
+            # Update both tab buttons
+            self.sections["status"]["log_button"].configure(text="Hide Log")
+            self.of_sections["status"]["log_button"].configure(text="Hide Log")
 
     def open_log_file(self):
         """Open log file in default text editor"""

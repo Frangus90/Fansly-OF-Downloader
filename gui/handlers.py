@@ -17,6 +17,10 @@ class EventHandlers:
             progress_callback=self.on_progress, log_callback=self.on_log
         )
 
+        # Badge tracking for log button
+        self.unread_warnings = 0
+        self.unread_errors = 0
+
     def set_sections(self, sections):
         """Set UI sections after layout is built"""
         self.sections = sections
@@ -63,7 +67,7 @@ class EventHandlers:
         # Update UI
         self.sections["buttons"]["start"].configure(state="disabled")
         self.sections["buttons"]["stop"].configure(state="normal")
-        self.sections["status"].configure(text="Status: Downloading...")
+        self.sections["status"]["label"].configure(text="Status: Downloading...")
 
         # Start download
         self.download_manager.start(self.state.config)
@@ -78,7 +82,7 @@ class EventHandlers:
         self.sections["log"].add_log("Stopping download...", "warning")
         self.sections["buttons"]["start"].configure(state="normal")
         self.sections["buttons"]["stop"].configure(state="disabled")
-        self.sections["status"].configure(text="Status: Stopped")
+        self.sections["status"]["label"].configure(text="Status: Stopped")
 
     def on_progress(self, update):
         """Handle progress update from download thread"""
@@ -98,23 +102,141 @@ class EventHandlers:
         if update.status == "complete":
             self.sections["buttons"]["start"].configure(state="normal")
             self.sections["buttons"]["stop"].configure(state="disabled")
-            self.sections["status"].configure(text="Status: Complete")
+            self.sections["status"]["label"].configure(text="Status: Complete")
             self.sections["log"].add_log("Download completed!", "info")
 
         elif update.status == "error":
             self.sections["buttons"]["start"].configure(state="normal")
             self.sections["buttons"]["stop"].configure(state="disabled")
-            self.sections["status"].configure(
+            self.sections["status"]["label"].configure(
                 text=f"Status: Error - {update.message[:50]}"
             )
 
-    def on_log(self, message, level):
-        """Handle log message from download thread"""
-        if not self.sections:
+    def on_log(self, message, level="info"):
+        """Handle log messages - route to status, badge, and log window"""
+        if not hasattr(self, 'sections') or not self.sections:
             return
 
-        # Schedule UI update on main thread
-        self.window.after(0, self.sections["log"].add_log, message, level)
+        def process_log():
+            # Always send to log window
+            if "log" in self.sections:
+                self.sections["log"].add_log(message, level)
+
+            # Classify message for status display
+            category, status_text = self._classify_log_message(message, level)
+
+            # Update status label if critical message
+            if status_text and "status" in self.sections:
+                self._update_status_with_context(status_text)
+
+            # Update badge for warnings/errors
+            if level == "warning":
+                self.unread_warnings += 1
+                self._update_log_button_badge()
+            elif level == "error":
+                self.unread_errors += 1
+                self._update_log_button_badge()
+
+        # Schedule on main thread
+        self.window.after(0, process_log)
+
+    def _classify_log_message(self, message: str, level: str):
+        """Classify log message and extract context for status display.
+
+        Returns:
+            (category, status_text) tuple
+            category: "rate_limit", "server_error", "end_content", "mode_info", "generic"
+            status_text: Concise text for status label, or empty string
+        """
+        import re
+
+        # Rate limiting detection
+        if "Rate limited" in message or "HTTP 429" in message:
+            # Extract retry info: "retry attempt 2/5"
+            match = re.search(r'attempt (\d+)/(\d+)', message)
+            if match:
+                return ("rate_limit", f"Rate limited - retry {match.group(1)}/{match.group(2)}")
+            return ("rate_limit", "Rate limited - retrying")
+
+        # Server error detection
+        if "Server error" in message:
+            match = re.search(r'Server error (\d+)', message)
+            if match:
+                return ("server_error", f"Server error {match.group(1)} - retrying")
+            return ("server_error", "Server error - retrying")
+
+        # End of content detection
+        if any(phrase in message for phrase in [
+            "Reached end", "No posts in timeline", "Next cursor is None"
+        ]):
+            return ("end_content", "Reached end of timeline")
+
+        # Mode information
+        if "Incremental mode" in message:
+            return ("mode_info", "Incremental mode active")
+
+        if "Post limit enabled" in message:
+            match = re.search(r'up to (\d+)', message)
+            if match:
+                return ("mode_info", f"Post limit: {match.group(1)} posts")
+            return ("mode_info", "Post limit active")
+
+        return ("generic", "")
+
+    def _update_status_with_context(self, context: str):
+        """Update status label with operational context"""
+        if "status" not in self.sections or "label" not in self.sections["status"]:
+            return
+
+        status_label = self.sections["status"]["label"]
+
+        # Get base status from current text
+        current = status_label.cget("text")
+        if "Downloading" in current:
+            base = "Status: Downloading..."
+        elif "Complete" in current:
+            base = "Status: Complete"
+        elif "Stopped" in current:
+            base = "Status: Stopped"
+        else:
+            base = current
+
+        # Append context
+        new_status = f"{base} ({context})"
+
+        # Update label
+        status_label.configure(text=new_status)
+
+    def _update_log_button_badge(self):
+        """Update log button text and color based on unread messages"""
+        if "status" not in self.sections or "log_button" not in self.sections["status"]:
+            return
+
+        log_button = self.sections["status"]["log_button"]
+        if not log_button:
+            return
+
+        # Determine badge count and color
+        total_unread = self.unread_warnings + self.unread_errors
+
+        # Check if log window is currently visible
+        is_visible = self.window.log_window.winfo_viewable()
+        base_text = "Hide Log" if is_visible else "Show Log"
+
+        if total_unread == 0:
+            # No badge - use default
+            log_button.configure(text=base_text, fg_color=["#3B8ED0", "#1F6AA5"])
+        else:
+            # Show badge with count
+            badge_text = f"{base_text} ({total_unread})"
+
+            # Color: Red for errors, orange for warnings only
+            if self.unread_errors > 0:
+                color = ["#DC3545", "#C82333"]  # Red
+            else:
+                color = ["#FD7E14", "#E8590C"]  # Orange
+
+            log_button.configure(text=badge_text, fg_color=color)
 
     def on_close(self):
         """Handle window close request"""
@@ -222,6 +344,10 @@ class OnlyFansEventHandlers:
             log_callback=self.on_log
         )
 
+        # Badge tracking for log button
+        self.unread_warnings = 0
+        self.unread_errors = 0
+
     def set_sections(self, sections):
         """Set UI sections after layout is built"""
         self.sections = sections
@@ -294,11 +420,131 @@ class OnlyFansEventHandlers:
             self.sections["buttons"]["stop"].configure(state="disabled")
             self.sections["status"]["label"].configure(text=f"OnlyFans: Error")
 
-    def on_log(self, message, level):
-        """Handle log message"""
-        if not self.sections:
+    def on_log(self, message, level="info"):
+        """Handle log messages - route to status, badge, and log window"""
+        if not hasattr(self, 'sections') or not self.sections:
             return
-        self.window.after(0, self.sections["log"].add_log, message, level)
+
+        def process_log():
+            # Always send to log window
+            if "log" in self.sections:
+                self.sections["log"].add_log(message, level)
+
+            # Classify message for status display
+            category, status_text = self._classify_log_message(message, level)
+
+            # Update status label if critical message
+            if status_text and "status" in self.sections:
+                self._update_status_with_context(status_text)
+
+            # Update badge for warnings/errors
+            if level == "warning":
+                self.unread_warnings += 1
+                self._update_log_button_badge()
+            elif level == "error":
+                self.unread_errors += 1
+                self._update_log_button_badge()
+
+        # Schedule on main thread
+        self.window.after(0, process_log)
+
+    def _classify_log_message(self, message: str, level: str):
+        """Classify log message and extract context for status display.
+
+        Returns:
+            (category, status_text) tuple
+            category: "rate_limit", "server_error", "end_content", "mode_info", "generic"
+            status_text: Concise text for status label, or empty string
+        """
+        import re
+
+        # Rate limiting detection
+        if "Rate limited" in message or "HTTP 429" in message:
+            # Extract retry info: "retry attempt 2/5"
+            match = re.search(r'attempt (\d+)/(\d+)', message)
+            if match:
+                return ("rate_limit", f"Rate limited - retry {match.group(1)}/{match.group(2)}")
+            return ("rate_limit", "Rate limited - retrying")
+
+        # Server error detection
+        if "Server error" in message:
+            match = re.search(r'Server error (\d+)', message)
+            if match:
+                return ("server_error", f"Server error {match.group(1)} - retrying")
+            return ("server_error", "Server error - retrying")
+
+        # End of content detection
+        if any(phrase in message for phrase in [
+            "Reached end", "No posts in timeline", "Next cursor is None"
+        ]):
+            return ("end_content", "Reached end of timeline")
+
+        # Mode information
+        if "Incremental mode" in message:
+            return ("mode_info", "Incremental mode active")
+
+        if "Post limit enabled" in message:
+            match = re.search(r'up to (\d+)', message)
+            if match:
+                return ("mode_info", f"Post limit: {match.group(1)} posts")
+            return ("mode_info", "Post limit active")
+
+        return ("generic", "")
+
+    def _update_status_with_context(self, context: str):
+        """Update status label with operational context"""
+        if "status" not in self.sections or "label" not in self.sections["status"]:
+            return
+
+        status_label = self.sections["status"]["label"]
+
+        # Get base status from current text
+        current = status_label.cget("text")
+        if "Downloading" in current:
+            base = "OnlyFans: Downloading..."
+        elif "Complete" in current:
+            base = "OnlyFans: Complete"
+        elif "Stopped" in current:
+            base = "OnlyFans: Stopped"
+        else:
+            base = current
+
+        # Append context
+        new_status = f"{base} ({context})"
+
+        # Update label
+        status_label.configure(text=new_status)
+
+    def _update_log_button_badge(self):
+        """Update log button text and color based on unread messages"""
+        if "status" not in self.sections or "log_button" not in self.sections["status"]:
+            return
+
+        log_button = self.sections["status"]["log_button"]
+        if not log_button:
+            return
+
+        # Determine badge count and color
+        total_unread = self.unread_warnings + self.unread_errors
+
+        # Check if log window is currently visible
+        is_visible = self.window.log_window.winfo_viewable()
+        base_text = "Hide Log" if is_visible else "Show Log"
+
+        if total_unread == 0:
+            # No badge - use default
+            log_button.configure(text=base_text, fg_color=["#3B8ED0", "#1F6AA5"])
+        else:
+            # Show badge with count
+            badge_text = f"{base_text} ({total_unread})"
+
+            # Color: Red for errors, orange for warnings only
+            if self.unread_errors > 0:
+                color = ["#DC3545", "#C82333"]  # Red
+            else:
+                color = ["#FD7E14", "#E8590C"]  # Orange
+
+            log_button.configure(text=badge_text, fg_color=color)
 
     def on_open_crop_tool(self):
         """Handle opening the image crop tool window (CustomTkinter version)"""

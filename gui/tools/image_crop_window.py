@@ -608,7 +608,22 @@ class ImageCropWindow(ctk.CTkToplevel):
             for idx, filepath in enumerate(self.loaded_images):
                 # Get saved settings for this image
                 saved = self.image_crop_settings.get(idx, {})
-                crop_coords = saved.get('crop_rect')
+
+                # Determine operations based on processing mode
+                mode = settings.get('processing_mode', 'crop_and_compress')
+
+                if mode == 'crop_only':
+                    crop_coords = saved.get('crop_rect')
+                    enable_compression = False
+                    target_size_mb = None
+                elif mode == 'compress_only':
+                    crop_coords = None
+                    enable_compression = settings.get('enable_compression', False)
+                    target_size_mb = settings.get('target_size_mb') if enable_compression else None
+                else:  # crop_and_compress
+                    crop_coords = saved.get('crop_rect')
+                    enable_compression = settings.get('enable_compression', False)
+                    target_size_mb = settings.get('target_size_mb') if enable_compression else None
 
                 task = ImageTask(
                     filepath=filepath,
@@ -616,7 +631,8 @@ class ImageCropWindow(ctk.CTkToplevel):
                     target_size=None,  # No resizing, just crop
                     format=settings['format'],
                     quality=settings['quality'],
-                    padding=settings['padding']
+                    target_file_size_mb=target_size_mb,
+                    enable_size_compression=enable_compression
                 )
                 self.processor.add_to_queue(task)
 

@@ -1,7 +1,7 @@
 """Custom styled dialog boxes matching CustomTkinter theme"""
 
 import customtkinter as ctk
-from typing import Optional
+from typing import Optional, Tuple
 
 
 class CTkDialog(ctk.CTkToplevel):
@@ -488,3 +488,250 @@ def ask_overwrite_skip(parent, title: str, message: str) -> Optional[str]:
         return "skip"
     else:
         return None
+
+
+class CTkCompressionWarningDialog(ctk.CTkToplevel):
+    """Dialog for file size compression warnings"""
+
+    def __init__(
+        self,
+        parent,
+        filename: str,
+        current_size_mb: float,
+        target_size_mb: float,
+        current_dimensions: Tuple[int, int],
+        suggested_dimensions: Tuple[int, int]
+    ):
+        super().__init__(parent)
+
+        self.result = None
+
+        # Window setup
+        self.title("Target Size Not Achievable")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+        self.attributes('-topmost', True)
+
+        # Build UI
+        self._build_ui(
+            filename,
+            current_size_mb,
+            target_size_mb,
+            current_dimensions,
+            suggested_dimensions
+        )
+
+        # Center on parent
+        self.update_idletasks()
+        self._center_on_parent(parent)
+
+        # Handle close
+        self.protocol("WM_DELETE_WINDOW", self._on_cancel)
+        self.bind("<Escape>", lambda e: self._on_cancel())
+
+    def _build_ui(
+        self,
+        filename: str,
+        current_size_mb: float,
+        target_size_mb: float,
+        current_dimensions: Tuple[int, int],
+        suggested_dimensions: Tuple[int, int]
+    ):
+        """Build warning dialog UI"""
+        main_frame = ctk.CTkFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Warning icon and title
+        title_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        title_frame.pack(fill="x", pady=(0, 15))
+
+        icon_label = ctk.CTkLabel(
+            title_frame,
+            text="!",
+            font=("Arial", 24, "bold"),
+            text_color="#f0ad4e",
+            width=40,
+            height=40
+        )
+        icon_label.pack(side="left", padx=(0, 10))
+
+        title_label = ctk.CTkLabel(
+            title_frame,
+            text="Cannot compress to target size",
+            font=("Arial", 14, "bold")
+        )
+        title_label.pack(side="left")
+
+        # Filename
+        filename_label = ctk.CTkLabel(
+            main_frame,
+            text=f"File: {filename}",
+            font=("Arial", 11),
+            anchor="w"
+        )
+        filename_label.pack(fill="x", pady=(0, 15), anchor="w")
+
+        # Info box
+        info_frame = ctk.CTkFrame(main_frame, fg_color="#1a1a1a", corner_radius=8)
+        info_frame.pack(fill="x", pady=(0, 15))
+
+        # Target size
+        self._add_info_row(
+            info_frame,
+            "Target size:",
+            f"{target_size_mb:.2f} MB"
+        )
+
+        # Achieved size
+        self._add_info_row(
+            info_frame,
+            "Achieved (min quality):",
+            f"{current_size_mb:.2f} MB",
+            color="#dc3545"
+        )
+
+        # Current dimensions
+        self._add_info_row(
+            info_frame,
+            "Current dimensions:",
+            f"{current_dimensions[0]} × {current_dimensions[1]}"
+        )
+
+        # Suggested dimensions
+        self._add_info_row(
+            info_frame,
+            "Suggested dimensions:",
+            f"{suggested_dimensions[0]} × {suggested_dimensions[1]}",
+            color="#28a745"
+        )
+
+        # Message
+        message_label = ctk.CTkLabel(
+            main_frame,
+            text="The image cannot be compressed to the target size\n"
+                 "even at minimum quality. You can:\n\n"
+                 "• Keep current size (exceeds target)\n"
+                 "• Reduce dimensions to suggested size\n"
+                 "• Cancel this image",
+            font=("Arial", 11),
+            justify="left",
+            anchor="w"
+        )
+        message_label.pack(fill="x", pady=(0, 15), anchor="w")
+
+        # Buttons
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x")
+
+        keep_btn = ctk.CTkButton(
+            button_frame,
+            text="Keep Current Size",
+            command=lambda: self._on_choice("keep"),
+            width=140,
+            height=32,
+            fg_color="#f0ad4e"
+        )
+        keep_btn.pack(side="left", padx=(0, 5))
+
+        resize_btn = ctk.CTkButton(
+            button_frame,
+            text="Reduce Dimensions",
+            command=lambda: self._on_choice("resize"),
+            width=140,
+            height=32,
+            fg_color="#28a745"
+        )
+        resize_btn.pack(side="left", padx=(0, 5))
+
+        cancel_btn = ctk.CTkButton(
+            button_frame,
+            text="Skip This Image",
+            command=self._on_cancel,
+            width=120,
+            height=32,
+            fg_color="transparent",
+            border_width=1,
+            border_color="#3b8ed0",
+            text_color="#3b8ed0"
+        )
+        cancel_btn.pack(side="left")
+
+    def _add_info_row(
+        self,
+        parent,
+        label: str,
+        value: str,
+        color: str = "#3b8ed0"
+    ):
+        """Add info row to info box"""
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill="x", padx=15, pady=5)
+
+        label_widget = ctk.CTkLabel(row, text=label, width=150, anchor="w")
+        label_widget.pack(side="left")
+
+        value_widget = ctk.CTkLabel(
+            row,
+            text=value,
+            font=("Arial", 11, "bold"),
+            text_color=color,
+            anchor="w"
+        )
+        value_widget.pack(side="left", padx=(10, 0))
+
+    def _center_on_parent(self, parent):
+        """Center dialog on parent window"""
+        self.update_idletasks()
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+        parent_w = parent.winfo_width()
+        parent_h = parent.winfo_height()
+        dialog_w = self.winfo_width()
+        dialog_h = self.winfo_height()
+        x = parent_x + (parent_w - dialog_w) // 2
+        y = parent_y + (parent_h - dialog_h) // 2
+        self.geometry(f"+{x}+{y}")
+
+    def _on_choice(self, choice: str):
+        """Handle choice"""
+        self.result = choice
+        self.destroy()
+
+    def _on_cancel(self):
+        """Handle cancel"""
+        self.result = "cancel"
+        self.destroy()
+
+    def get_result(self) -> Optional[str]:
+        """Wait and return result"""
+        self.wait_window()
+        return self.result
+
+
+def ask_compression_action(
+    parent,
+    filename: str,
+    current_size_mb: float,
+    target_size_mb: float,
+    current_dimensions: Tuple[int, int],
+    suggested_dimensions: Tuple[int, int]
+) -> Optional[str]:
+    """
+    Show compression warning dialog.
+
+    Returns:
+        "keep" - Keep current size
+        "resize" - Apply dimension reduction
+        "cancel" - Skip this image
+        None - Dialog closed
+    """
+    dialog = CTkCompressionWarningDialog(
+        parent,
+        filename,
+        current_size_mb,
+        target_size_mb,
+        current_dimensions,
+        suggested_dimensions
+    )
+    return dialog.get_result()

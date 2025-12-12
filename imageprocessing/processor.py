@@ -17,6 +17,8 @@ class ImageTask:
     format: str = 'JPEG'
     quality: int = 95
     padding: int = 0
+    target_file_size_mb: Optional[float] = None  # Target file size in MB
+    enable_size_compression: bool = False  # Enable file size compression
 
     def __post_init__(self):
         """Validate task parameters"""
@@ -239,8 +241,9 @@ class ImageProcessor:
                     overwrite=overwrite
                 )
 
-                # Save
-                save_image(image, output_path, task.format, task.quality)
+                # Save with optional file size compression
+                compression_target = task.target_file_size_mb if task.enable_size_compression else None
+                save_image(image, output_path, task.format, task.quality, compression_target)
                 output_files.append(output_path)
 
                 # Update progress
@@ -289,8 +292,9 @@ class ImageProcessor:
             if task.padding > 0:
                 image = add_padding(image, task.padding)
 
-            # Save
-            save_image(image, output_path, task.format, task.quality)
+            # Save with optional file size compression
+            compression_target = task.target_file_size_mb if task.enable_size_compression else None
+            save_image(image, output_path, task.format, task.quality, compression_target)
             return True
 
         except Exception:

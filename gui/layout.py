@@ -5,7 +5,7 @@ UI layout builder
 import customtkinter as ctk
 
 
-def build_layout(parent, state, handlers):
+def build_layout(parent, state, handlers, toggle_log_callback=None):
     """Build the complete UI layout with 2-column design"""
     main_frame = ctk.CTkFrame(parent)
     main_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -45,14 +45,8 @@ def build_layout(parent, state, handlers):
     # Control buttons (left)
     sections["buttons"] = build_control_buttons(left_frame, handlers)
 
-    # Log section (left, expandable)
-    from gui.widgets.log_section import LogSection
-
-    sections["log"] = LogSection(left_frame)
-    sections["log"].pack(fill="both", expand=True, padx=10, pady=5)
-
-    # Status bar (left)
-    sections["status"] = build_status_bar(left_frame)
+    # Status bar (left) - includes log toggle button
+    sections["status"] = build_status_bar(left_frame, toggle_log_callback)
 
     # RIGHT COLUMN FRAME
     right_frame = ctk.CTkFrame(main_frame)
@@ -101,12 +95,33 @@ def build_control_buttons(parent, handlers):
     return {"frame": button_frame, "start": start_btn, "stop": stop_btn}
 
 
-def build_status_bar(parent):
-    """Build status bar"""
-    status_label = ctk.CTkLabel(parent, text="Status: Idle", anchor="w")
-    status_label.pack(fill="x", padx=10, pady=5)
+def build_status_bar(parent, toggle_log_callback=None):
+    """Build status bar with log toggle button"""
+    status_frame = ctk.CTkFrame(parent)
+    status_frame.pack(fill="x", padx=10, pady=(5, 10))
 
-    return status_label
+    # Status label (left)
+    status_label = ctk.CTkLabel(
+        status_frame,
+        text="Status: Idle",
+        font=("Arial", 12),
+        anchor="w"
+    )
+    status_label.pack(side="left", padx=5)
+
+    # Log toggle button (right)
+    log_button = None
+    if toggle_log_callback:
+        log_button = ctk.CTkButton(
+            status_frame,
+            text="Show Log",
+            command=toggle_log_callback,
+            width=100,
+            height=28
+        )
+        log_button.pack(side="right", padx=5)
+
+    return {"label": status_label, "log_button": log_button}
 
 
 def build_tools_section(parent, handlers):

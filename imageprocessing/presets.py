@@ -281,3 +281,40 @@ def save_last_output_dir(output_dir: Path) -> bool:
     settings = load_settings()
     settings['last_output_dir'] = str(output_dir)
     return save_settings(settings)
+
+
+def get_compression_settings() -> Dict[str, Union[bool, float, str]]:
+    """
+    Get file size compression settings.
+
+    Returns:
+        Dictionary with compression settings:
+        - enable_file_size_compression: bool
+        - target_file_size_mb: float
+        - processing_mode: str
+    """
+    settings = load_settings()
+    return {
+        'enable_file_size_compression': settings.get('enable_file_size_compression', False),
+        'target_file_size_mb': settings.get('target_file_size_mb', 5.0),
+        'processing_mode': settings.get('processing_mode', 'crop_and_compress')
+    }
+
+
+def save_compression_settings(enable: bool, target_mb: float, mode: str) -> bool:
+    """
+    Save file size compression settings.
+
+    Args:
+        enable: Enable file size compression
+        target_mb: Target file size in MB
+        mode: Processing mode (crop_only, compress_only, crop_and_compress)
+
+    Returns:
+        True if saved successfully
+    """
+    settings = load_settings()
+    settings['enable_file_size_compression'] = enable
+    settings['target_file_size_mb'] = target_mb
+    settings['processing_mode'] = mode
+    return save_settings(settings)
