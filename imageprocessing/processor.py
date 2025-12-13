@@ -246,9 +246,12 @@ class ImageProcessor:
 
                     # Save with optional file size compression
                     compression_target = task.target_file_size_mb if task.enable_size_compression else None
+                    # Only use source file size optimization if no crop was applied
+                    # (cropped images need their actual size checked, not original)
+                    source_for_compression = task.filepath if not task.crop_rect else None
                     save_image(
                         image, output_path, task.format, task.quality,
-                        compression_target, source_filepath=task.filepath
+                        compression_target, source_filepath=source_for_compression
                     )
                     output_files.append(output_path)
 
@@ -308,9 +311,11 @@ class ImageProcessor:
 
                 # Save with optional file size compression
                 compression_target = task.target_file_size_mb if task.enable_size_compression else None
+                # Only use source file size optimization if no crop was applied
+                source_for_compression = task.filepath if not task.crop_rect else None
                 save_image(
                     image, output_path, task.format, task.quality,
-                    compression_target, source_filepath=task.filepath
+                    compression_target, source_filepath=source_for_compression
                 )
                 return True
 

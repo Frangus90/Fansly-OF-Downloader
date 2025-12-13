@@ -35,8 +35,14 @@ class CropSettingsPanel(ctk.CTkFrame):
         self.on_settings_change_callback = on_settings_change_callback
         self.on_aspect_ratio_apply_callback = on_aspect_ratio_apply_callback
 
+        # Flag to prevent callbacks during initialization
+        self._initialized = False
+
         # Build UI
         self._build_ui()
+
+        # Now safe to call callbacks
+        self._initialized = True
 
     def _build_ui(self):
         """Build the settings panel UI"""
@@ -217,14 +223,14 @@ class CropSettingsPanel(ctk.CTkFrame):
         )
         self.aspect_ratio_entry.pack(side="left", padx=(0, 5))
 
-        apply_aspect_btn = ctk.CTkButton(
+        self.apply_aspect_btn = ctk.CTkButton(
             input_frame,
-            text="Apply to All",
+            text="Apply to Selected",
             command=self._on_apply_aspect_ratio,
-            width=90,
+            width=110,
             height=28
         )
-        apply_aspect_btn.pack(side="left")
+        self.apply_aspect_btn.pack(side="left")
 
         # Crop anchor/alignment dropdown
         anchor_frame = ctk.CTkFrame(section)
@@ -328,29 +334,19 @@ class CropSettingsPanel(ctk.CTkFrame):
 
     def _build_compression_section(self):
         """Build file size compression controls"""
-        section = ctk.CTkFrame(self)
-        section.pack(fill="x", padx=10, pady=5)
+        self.compression_section = ctk.CTkFrame(self)
+        self.compression_section.pack(fill="x", padx=10, pady=5)
 
         label = ctk.CTkLabel(
-            section,
+            self.compression_section,
             text="File Size Compression",
             font=("Arial", 14, "bold"),
             anchor="w"
         )
         label.pack(padx=10, pady=(10, 5), anchor="w")
 
-        # Enable checkbox
-        self.enable_compression_var = ctk.BooleanVar(value=False)
-        self.enable_compression_check = ctk.CTkCheckBox(
-            section,
-            text="Enable file size compression",
-            variable=self.enable_compression_var,
-            command=self._on_compression_toggle
-        )
-        self.enable_compression_check.pack(padx=10, pady=5, anchor="w")
-
         # Target size input frame
-        self.target_size_frame = ctk.CTkFrame(section)
+        self.target_size_frame = ctk.CTkFrame(self.compression_section)
         self.target_size_frame.pack(fill="x", padx=10, pady=5)
 
         # Label
@@ -384,7 +380,7 @@ class CropSettingsPanel(ctk.CTkFrame):
 
         # Info label
         self.compression_info_label = ctk.CTkLabel(
-            section,
+            self.compression_section,
             text="Quality will be automatically adjusted to meet target size",
             font=("Arial", 9),
             text_color="gray60",
@@ -394,22 +390,23 @@ class CropSettingsPanel(ctk.CTkFrame):
 
         # Processing mode selection
         mode_label = ctk.CTkLabel(
-            section,
+            self.compression_section,
             text="Processing mode:",
             anchor="w"
         )
         mode_label.pack(padx=10, pady=(5, 0), anchor="w")
 
         self.processing_mode_var = ctk.StringVar(value="crop_and_compress")
-        mode_container = ctk.CTkFrame(section, fg_color="transparent")
+        mode_container = ctk.CTkFrame(self.compression_section, fg_color="transparent")
         mode_container.pack(fill="x", padx=10, pady=5)
 
-        # Radio buttons
+        # Radio buttons - each has callback to update compression UI
         crop_and_compress_radio = ctk.CTkRadioButton(
             mode_container,
             text="Crop + Compress",
             variable=self.processing_mode_var,
-            value="crop_and_compress"
+            value="crop_and_compress",
+            command=self._on_processing_mode_changed
         )
         crop_and_compress_radio.pack(anchor="w", pady=2)
 
@@ -417,7 +414,8 @@ class CropSettingsPanel(ctk.CTkFrame):
             mode_container,
             text="Compress Only (no crop)",
             variable=self.processing_mode_var,
-            value="compress_only"
+            value="compress_only",
+            command=self._on_processing_mode_changed
         )
         compress_only_radio.pack(anchor="w", pady=2)
 
@@ -425,12 +423,14 @@ class CropSettingsPanel(ctk.CTkFrame):
             mode_container,
             text="Crop Only (no compression)",
             variable=self.processing_mode_var,
-            value="crop_only"
+            value="crop_only",
+            command=self._on_processing_mode_changed
         )
         crop_only_radio.pack(anchor="w", pady=2)
 
-        # Initially disable compression controls
-        self._toggle_compression_controls(False)
+        # Initial state - compression controls enabled (default is crop_and_compress)
+        self._update_compression_visibility()
+        self._on_format_changed()  # Sync quality label with initial mode
 
     def _browse_images(self):
         """Open file browser to select multiple images"""
@@ -576,26 +576,21 @@ class CropSettingsPanel(ctk.CTkFrame):
     def _on_format_changed(self):
         """Handle format selection change and manage compression state"""
         format_val = self.format_var.get()
-        compression_enabled = self.enable_compression_var.get()
+        mode = self.processing_mode_var.get()
+        compression_enabled = mode in ('crop_and_compress', 'compress_only')
 
         if format_val == "PNG":
-            # PNG is lossless, disable both quality and compression
+            # PNG is lossless, disable quality slider
             self.quality_slider.configure(state="disabled")
             self.quality_value_label.configure(text="N/A (lossless)")
-            self.enable_compression_check.configure(state="disabled")
-            if compression_enabled:
-                self.enable_compression_var.set(False)
-                self._toggle_compression_controls(False)
         else:
             # JPEG/WebP support compression
-            self.enable_compression_check.configure(state="normal")
-
             if compression_enabled:
-                # Compression is enabled, disable quality slider
+                # Compression mode - disable quality slider (auto-adjusted)
                 self.quality_slider.configure(state="disabled")
                 self.quality_value_label.configure(text="Auto (size-based)")
             else:
-                # Compression disabled, enable quality slider
+                # Crop only mode - enable quality slider
                 self.quality_slider.configure(state="normal")
                 self._update_quality_label()
 
@@ -603,28 +598,36 @@ class CropSettingsPanel(ctk.CTkFrame):
 
     def _on_settings_changed(self, *args):
         """Handle any settings change"""
-        self.on_settings_change_callback()
+        # Don't call callback during initialization
+        if self._initialized:
+            self.on_settings_change_callback()
 
     def _update_quality_label(self, *args):
         """Update quality value label"""
         value = self.quality_var.get()
         self.quality_value_label.configure(text=f"{value}%")
 
-    def _on_compression_toggle(self):
-        """Handle compression checkbox toggle"""
-        enabled = self.enable_compression_var.get()
-        self._toggle_compression_controls(enabled)
+    def _on_processing_mode_changed(self):
+        """Handle processing mode radio button change"""
+        self._update_compression_visibility()
         self._on_format_changed()  # Update quality slider state
 
-    def _toggle_compression_controls(self, enabled: bool):
-        """Enable/disable compression controls"""
-        state = "normal" if enabled else "disabled"
-        self.target_size_dropdown.configure(state=state)
+    def _update_compression_visibility(self):
+        """Show/hide compression controls based on processing mode"""
+        mode = self.processing_mode_var.get()
+        # Show compression controls for modes that include compression
+        show_compression = mode in ('crop_and_compress', 'compress_only')
 
-        # Show/hide custom input if needed
-        if enabled and self.target_size_var.get() == "Custom...":
-            self.custom_size_entry.pack(side="left", padx=5)
+        if show_compression:
+            self.target_size_frame.pack(fill="x", padx=10, pady=5)
+            self.compression_info_label.pack(padx=10, pady=(0, 5))
+            self.target_size_dropdown.configure(state="normal")
+            # Show custom input if needed
+            if self.target_size_var.get() == "Custom...":
+                self.custom_size_entry.pack(side="left", padx=5)
         else:
+            self.target_size_frame.pack_forget()
+            self.compression_info_label.pack_forget()
             self.custom_size_entry.pack_forget()
 
     def _on_target_size_changed(self, value: str):
@@ -638,7 +641,7 @@ class CropSettingsPanel(ctk.CTkFrame):
             self.custom_size_entry.pack_forget()
 
     def _on_apply_aspect_ratio(self):
-        """Parse and apply aspect ratio input to ALL images"""
+        """Parse and apply aspect ratio input to selected images (or all if none selected)"""
         ratio_str = self.aspect_ratio_var.get().strip()
 
         if not ratio_str:
@@ -701,14 +704,18 @@ class CropSettingsPanel(ctk.CTkFrame):
         else:
             target_mb = float(target_size_str.replace(" MB", ""))
 
+        # Derive compression from processing mode
+        mode = self.processing_mode_var.get()
+        enable_compression = mode in ('crop_and_compress', 'compress_only')
+
         return {
             'preset': self.preset_var.get(),
             'lock_aspect': self.lock_aspect_var.get(),
             'format': self.format_var.get(),
             'quality': self.quality_var.get(),
-            'enable_compression': self.enable_compression_var.get(),
+            'enable_compression': enable_compression,
             'target_size_mb': target_mb,
-            'processing_mode': self.processing_mode_var.get(),
+            'processing_mode': mode,
         }
 
     def get_current_aspect_ratio_input(self) -> Optional[float]:

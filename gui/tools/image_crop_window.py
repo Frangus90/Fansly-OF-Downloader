@@ -406,7 +406,7 @@ class ImageCropWindow(ctk.CTkToplevel):
             print(f"Error applying aspect ratio to current image: {e}")
 
     def _on_aspect_ratio_applied(self, ratio: float):
-        """Handle aspect ratio input - apply to ALL images in queue"""
+        """Handle aspect ratio input - apply to selected images (or all if none selected)"""
         if not self.loaded_images:
             dialogs.show_info(self, "No Images", "Load images first before applying aspect ratio.")
             return
@@ -417,8 +417,19 @@ class ImageCropWindow(ctk.CTkToplevel):
         # Get anchor/alignment setting
         anchor = self.settings_panel.get_crop_anchor()
 
-        # Apply to ALL images
-        for idx, filepath in enumerate(self.loaded_images):
+        # Get selected indices from queue panel - if none selected, apply to all
+        selected_indices = self.queue_panel.get_selected_indices()
+        if not selected_indices:
+            # No selection - apply to all images
+            indices_to_apply = list(range(len(self.loaded_images)))
+        else:
+            indices_to_apply = selected_indices
+
+        # Apply to selected images (or all if none selected)
+        for idx in indices_to_apply:
+            if idx >= len(self.loaded_images):
+                continue
+            filepath = self.loaded_images[idx]
             # Calculate crop box with target aspect ratio for each image
             try:
                 with Image.open(filepath) as img:
@@ -484,11 +495,17 @@ class ImageCropWindow(ctk.CTkToplevel):
 
         # Show confirmation
         anchor_text = f"aligned to {anchor.lower()}" if anchor != "Center" else "centered"
+        applied_count = len(indices_to_apply)
+        if selected_indices:
+            title = "Applied to Selected"
+            message = f"Aspect ratio {ratio:.3f} applied to {applied_count} selected image(s).\n\n"
+        else:
+            title = "Applied to All"
+            message = f"Aspect ratio {ratio:.3f} applied to all {applied_count} image(s).\n\n"
         dialogs.show_info(
             self,
-            "Applied to All",
-            f"Aspect ratio {ratio:.3f} applied to {len(self.loaded_images)} image(s).\n\n"
-            f"Each image has a crop box {anchor_text}."
+            title,
+            message + f"Each image has a crop box {anchor_text}."
         )
 
     def _on_navigate(self, direction: str):
@@ -617,13 +634,15 @@ class ImageCropWindow(ctk.CTkToplevel):
                     enable_compression = False
                     target_size_mb = None
                 elif mode == 'compress_only':
+                    # Compress only - no crop, always compress
                     crop_coords = None
-                    enable_compression = settings.get('enable_compression', False)
-                    target_size_mb = settings.get('target_size_mb') if enable_compression else None
+                    enable_compression = True
+                    target_size_mb = settings.get('target_size_mb', 5.0)
                 else:  # crop_and_compress
+                    # Both operations - crop and always compress
                     crop_coords = saved.get('crop_rect')
-                    enable_compression = settings.get('enable_compression', False)
-                    target_size_mb = settings.get('target_size_mb') if enable_compression else None
+                    enable_compression = True
+                    target_size_mb = settings.get('target_size_mb', 5.0)
 
                 task = ImageTask(
                     filepath=filepath,

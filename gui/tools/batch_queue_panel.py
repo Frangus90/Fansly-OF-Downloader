@@ -35,14 +35,64 @@ class BatchQueuePanel(ctk.CTkFrame):
 
     def _build_ui(self):
         """Build the queue panel UI"""
-        # Title
+        # Title row with selection info
+        title_frame = ctk.CTkFrame(self, fg_color="transparent")
+        title_frame.pack(fill="x", padx=15, pady=(15, 5))
+
         title = ctk.CTkLabel(
-            self,
+            title_frame,
             text="Batch Queue",
             font=("Arial", 18, "bold"),
             anchor="w"
         )
-        title.pack(padx=15, pady=(15, 10), anchor="w")
+        title.pack(side="left")
+
+        # Selection count label
+        self.selection_label = ctk.CTkLabel(
+            title_frame,
+            text="0/0 selected",
+            font=("Arial", 11),
+            text_color="gray60"
+        )
+        self.selection_label.pack(side="right")
+
+        # Selection buttons row
+        selection_btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        selection_btn_frame.pack(fill="x", padx=10, pady=(0, 5))
+
+        self.select_all_btn = ctk.CTkButton(
+            selection_btn_frame,
+            text="Select All",
+            command=self.select_all,
+            width=80,
+            height=25,
+            font=("Arial", 10),
+            state="disabled"
+        )
+        self.select_all_btn.pack(side="left", padx=(0, 5))
+
+        self.deselect_all_btn = ctk.CTkButton(
+            selection_btn_frame,
+            text="Deselect",
+            command=self.deselect_all,
+            width=70,
+            height=25,
+            font=("Arial", 10),
+            state="disabled"
+        )
+        self.deselect_all_btn.pack(side="left", padx=(0, 5))
+
+        self.delete_selected_btn = ctk.CTkButton(
+            selection_btn_frame,
+            text="Delete Selected",
+            command=self.delete_selected,
+            width=100,
+            height=25,
+            font=("Arial", 10),
+            fg_color="#dc3545",
+            state="disabled"
+        )
+        self.delete_selected_btn.pack(side="left")
 
         # Queue list (scrollable)
         self.queue_frame = ctk.CTkScrollableFrame(self, height=400)
@@ -154,6 +204,18 @@ class BatchQueuePanel(ctk.CTkFrame):
                 item_frame = ctk.CTkFrame(self.queue_frame)
                 item_frame.pack(fill="x", pady=2)
 
+                # Checkbox for selection
+                index = len(self.queue_items)
+                selected_var = ctk.BooleanVar(value=False)
+                checkbox = ctk.CTkCheckBox(
+                    item_frame,
+                    text="",
+                    variable=selected_var,
+                    command=self._on_selection_changed,
+                    width=20
+                )
+                checkbox.pack(side="left", padx=(5, 0))
+
                 # Thumbnail
                 thumb_label = ctk.CTkLabel(item_frame, image=thumbnail, text="")
                 thumb_label.image = thumbnail  # Keep reference
@@ -170,7 +232,6 @@ class BatchQueuePanel(ctk.CTkFrame):
                 name_label.pack(side="left", fill="x", expand=True, padx=5)
 
                 # Remove button
-                index = len(self.queue_items)
                 remove_btn = ctk.CTkButton(
                     item_frame,
                     text="×",
@@ -186,12 +247,14 @@ class BatchQueuePanel(ctk.CTkFrame):
                 thumb_label.bind("<Button-1>", lambda e, idx=index: self._on_select_item(idx))
                 name_label.bind("<Button-1>", lambda e, idx=index: self._on_select_item(idx))
 
-                # Store item with PIL image reference
+                # Store item with PIL image reference and selection state
                 self.queue_items.append({
                     'filepath': filepath,
                     'frame': item_frame,
                     'thumbnail': thumbnail,
-                    'pil_image': img  # Keep PIL image alive for CTkImage
+                    'pil_image': img,  # Keep PIL image alive for CTkImage
+                    'selected_var': selected_var,
+                    'checkbox': checkbox
                 })
 
             except Exception as e:
@@ -202,9 +265,11 @@ class BatchQueuePanel(ctk.CTkFrame):
         if self.queue_items:
             self.clear_btn.configure(state="normal")
             self.process_btn.configure(state="normal")
+            self.select_all_btn.configure(state="normal")
 
-        # Update progress
+        # Update progress and selection
         self._update_progress_label()
+        self._update_selection_label()
 
     def _on_select_item(self, index: int):
         """Handle queue item selection"""
@@ -240,10 +305,15 @@ class BatchQueuePanel(ctk.CTkFrame):
                 self.empty_label.pack(pady=40)
                 self.clear_btn.configure(state="disabled")
                 self.process_btn.configure(state="disabled")
+                self.select_all_btn.configure(state="disabled")
+                self.deselect_all_btn.configure(state="disabled")
+                self.delete_selected_btn.configure(state="disabled")
                 self.selected_index = -1
 
-            # Update progress
+            # Update progress and selection
             self._update_progress_label()
+            self._update_selection_label()
+            self._update_selection_buttons()
 
     def _on_clear_all(self):
         """Clear all items from queue"""
@@ -259,10 +329,14 @@ class BatchQueuePanel(ctk.CTkFrame):
         # Disable controls
         self.clear_btn.configure(state="disabled")
         self.process_btn.configure(state="disabled")
+        self.select_all_btn.configure(state="disabled")
+        self.deselect_all_btn.configure(state="disabled")
+        self.delete_selected_btn.configure(state="disabled")
 
-        # Reset progress
+        # Reset progress and selection
         self.progress_bar.set(0)
         self._update_progress_label()
+        self._update_selection_label()
 
     def _on_process(self):
         """Handle process button click"""
@@ -301,6 +375,10 @@ class BatchQueuePanel(ctk.CTkFrame):
 
             # Update click bindings
             item['frame'].bind("<Button-1>", lambda e, i=idx: self._on_select_item(i))
+
+        # Update selection UI after index refresh
+        self._update_selection_label()
+        self._update_selection_buttons()
 
     def update_progress(self, current: int, total: int, message: str = ""):
         """
@@ -348,3 +426,98 @@ class BatchQueuePanel(ctk.CTkFrame):
         state = "disabled" if processing else "normal"
         self.process_btn.configure(state=state)
         self.clear_btn.configure(state=state)
+        self.select_all_btn.configure(state=state)
+        self.deselect_all_btn.configure(state=state if self._get_selected_count() > 0 else "disabled")
+        self.delete_selected_btn.configure(state=state if self._get_selected_count() > 0 else "disabled")
+
+    def select_all(self):
+        """Select all items in the queue"""
+        for item in self.queue_items:
+            item['selected_var'].set(True)
+        self._on_selection_changed()
+
+    def deselect_all(self):
+        """Deselect all items in the queue"""
+        for item in self.queue_items:
+            item['selected_var'].set(False)
+        self._on_selection_changed()
+
+    def get_selected_indices(self) -> List[int]:
+        """Get indices of all selected items"""
+        return [i for i, item in enumerate(self.queue_items) if item['selected_var'].get()]
+
+    def _get_selected_count(self) -> int:
+        """Get count of selected items"""
+        return sum(1 for item in self.queue_items if item['selected_var'].get())
+
+    def _on_selection_changed(self):
+        """Handle selection state change - update UI"""
+        self._update_selection_label()
+        self._update_selection_buttons()
+
+    def _update_selection_label(self):
+        """Update the selection count label"""
+        selected = self._get_selected_count()
+        total = len(self.queue_items)
+        self.selection_label.configure(text=f"{selected}/{total} selected")
+
+    def _update_selection_buttons(self):
+        """Enable/disable selection buttons based on current state"""
+        selected_count = self._get_selected_count()
+        total = len(self.queue_items)
+
+        # Select All: enabled if there are items and not all selected
+        if total > 0 and selected_count < total:
+            self.select_all_btn.configure(state="normal")
+        else:
+            self.select_all_btn.configure(state="disabled")
+
+        # Deselect: enabled if any items selected
+        if selected_count > 0:
+            self.deselect_all_btn.configure(state="normal")
+            self.delete_selected_btn.configure(state="normal")
+        else:
+            self.deselect_all_btn.configure(state="disabled")
+            self.delete_selected_btn.configure(state="disabled")
+
+    def delete_selected(self):
+        """Delete all selected items from the queue"""
+        from tkinter import messagebox
+
+        selected_indices = self.get_selected_indices()
+        if not selected_indices:
+            return
+
+        # Confirm deletion
+        count = len(selected_indices)
+        if not messagebox.askyesno(
+            "Delete Selected",
+            f"Delete {count} selected image{'s' if count > 1 else ''}?",
+            parent=self.winfo_toplevel()
+        ):
+            return
+
+        # Remove items in reverse order to maintain correct indices
+        for idx in sorted(selected_indices, reverse=True):
+            # Remove from UI
+            self.queue_items[idx]['frame'].destroy()
+            # Remove from list
+            self.queue_items.pop(idx)
+            # Notify parent
+            self.on_remove_callback(idx)
+
+        # Refresh indices for remaining items
+        self._refresh_item_indices()
+
+        # Show empty label if queue is empty
+        if not self.queue_items:
+            self.empty_label.pack(pady=40)
+            self.clear_btn.configure(state="disabled")
+            self.process_btn.configure(state="disabled")
+            self.select_all_btn.configure(state="disabled")
+            self.selected_index = -1
+
+        # Update progress and selection
+        self._update_progress_label()
+        self._update_selection_label()
+        self._update_selection_buttons()
