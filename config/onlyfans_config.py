@@ -50,6 +50,10 @@ class OnlyFansConfig:
     # Only applies when creator has no download history and not in incremental mode
     max_posts_per_creator: Optional[int] = None
 
+    # Media type filters (which types to download)
+    download_photos: bool = True
+    download_videos: bool = True
+
     # Cache
     last_run_timestamp: Optional[str] = None
 
@@ -152,6 +156,10 @@ def load_onlyfans_config(config: OnlyFansConfig) -> None:
         else:
             config.max_posts_per_creator = None
 
+        # Media type filters
+        config.download_photos = config._parser.getboolean('Options', 'download_photos', fallback=True)
+        config.download_videos = config._parser.getboolean('Options', 'download_videos', fallback=True)
+
     # Load cache
     if config._parser.has_section('Cache'):
         config.last_run_timestamp = config._parser.get('Cache', 'last_run_timestamp', fallback=None)
@@ -204,6 +212,10 @@ def save_onlyfans_config(config: OnlyFansConfig) -> None:
         config._parser.set('Options', 'max_posts_per_creator', str(config.max_posts_per_creator))
     else:
         config._parser.set('Options', 'max_posts_per_creator', '')
+
+    # Media type filters
+    config._parser.set('Options', 'download_photos', str(config.download_photos))
+    config._parser.set('Options', 'download_videos', str(config.download_videos))
 
     # Save cache
     if not config._parser.has_section('Cache'):

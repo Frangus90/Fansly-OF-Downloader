@@ -33,29 +33,48 @@ class OnlyFansSettingsSection(ctk.CTkFrame):
         )
         info_label.grid(row=1, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="w")
 
+        # Media Types
+        media_label = ctk.CTkLabel(self, text="Media Types:", anchor="w")
+        media_label.grid(row=2, column=0, padx=10, pady=5, sticky="w")
+
+        media_frame = ctk.CTkFrame(self)
+        media_frame.grid(row=2, column=1, columnspan=2, padx=10, pady=5, sticky="w")
+
+        self.photos_var = ctk.BooleanVar(value=True)
+        self.photos_check = ctk.CTkCheckBox(
+            media_frame, text="Photos", variable=self.photos_var
+        )
+        self.photos_check.pack(side="left", padx=5)
+
+        self.videos_var = ctk.BooleanVar(value=True)
+        self.videos_check = ctk.CTkCheckBox(
+            media_frame, text="Videos", variable=self.videos_var
+        )
+        self.videos_check.pack(side="left", padx=5)
+
         # Download Directory
         dir_label = ctk.CTkLabel(self, text="Download Directory:", anchor="w")
-        dir_label.grid(row=2, column=0, padx=10, pady=5, sticky="w")
+        dir_label.grid(row=3, column=0, padx=10, pady=5, sticky="w")
 
         self.dir_entry = ctk.CTkEntry(self, width=300)
-        self.dir_entry.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
+        self.dir_entry.grid(row=3, column=1, padx=10, pady=5, sticky="ew")
 
         browse_btn = ctk.CTkButton(
             self, text="Browse...", command=self.browse_directory, width=100
         )
-        browse_btn.grid(row=2, column=2, padx=(10, 5), pady=5)
+        browse_btn.grid(row=3, column=2, padx=(10, 5), pady=5)
 
         open_folder_btn = ctk.CTkButton(
             self, text="Open Folder", command=self._open_download_folder, width=100
         )
-        open_folder_btn.grid(row=2, column=3, padx=(0, 10), pady=5)
+        open_folder_btn.grid(row=3, column=3, padx=(0, 10), pady=5)
 
         # Options
         options_label = ctk.CTkLabel(self, text="Options:", anchor="w")
-        options_label.grid(row=3, column=0, padx=10, pady=5, sticky="nw")
+        options_label.grid(row=4, column=0, padx=10, pady=5, sticky="nw")
 
         options_frame = ctk.CTkFrame(self)
-        options_frame.grid(row=3, column=1, columnspan=2, padx=10, pady=5, sticky="w")
+        options_frame.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="w")
 
         # Incremental mode toggle
         self.incremental_var = ctk.BooleanVar(value=False)
@@ -97,10 +116,10 @@ class OnlyFansSettingsSection(ctk.CTkFrame):
 
         # Rate Limiting Section
         rate_limit_label = ctk.CTkLabel(self, text="Rate Limiting:", anchor="w")
-        rate_limit_label.grid(row=4, column=0, padx=10, pady=5, sticky="nw")
+        rate_limit_label.grid(row=5, column=0, padx=10, pady=5, sticky="nw")
 
         rate_limit_frame = ctk.CTkFrame(self)
-        rate_limit_frame.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        rate_limit_frame.grid(row=5, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
 
         rate_limit_desc_label = ctk.CTkLabel(
             rate_limit_frame,
@@ -178,6 +197,12 @@ class OnlyFansSettingsSection(ctk.CTkFrame):
         if hasattr(self.config, 'incremental_mode'):
             self.incremental_var.set(self.config.incremental_mode)
 
+        # Media types
+        if hasattr(self.config, 'download_photos'):
+            self.photos_var.set(self.config.download_photos)
+        if hasattr(self.config, 'download_videos'):
+            self.videos_var.set(self.config.download_videos)
+
         # Rate limit
         if hasattr(self.config, 'rate_limit_delay'):
             self.rate_limit_slider.set(self.config.rate_limit_delay)
@@ -208,6 +233,10 @@ class OnlyFansSettingsSection(ctk.CTkFrame):
 
         # Incremental mode
         config.incremental_mode = self.incremental_var.get()
+
+        # Media types
+        config.download_photos = self.photos_var.get()
+        config.download_videos = self.videos_var.get()
 
         # Rate limit
         config.rate_limit_delay = int(self.rate_limit_slider.get())

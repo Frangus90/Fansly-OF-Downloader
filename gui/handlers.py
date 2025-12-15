@@ -55,6 +55,11 @@ class EventHandlers:
             self.sections["log"].add_log("No creators selected!", "error")
             return
 
+        # Validate at least one media type is selected
+        if not self.state.config.download_photos and not self.state.config.download_videos:
+            self.sections["log"].add_log("Please select at least one media type (Photos or Videos)!", "error")
+            return
+
         # Set config.user_names to ONLY the creator we're downloading
         # This is what the download system expects
         first_creator = selected_creators[0]
@@ -303,6 +308,11 @@ class OnlyFansEventHandlers:
         self.sections["auth"].save_to_config()
         self.sections["settings"].save_to_config(self.state.config)
         self.sections["creator"].save_to_config(self.state.config)
+
+        # Validate at least one media type is selected
+        if not self.state.config.download_photos and not self.state.config.download_videos:
+            self.sections["log"].add_log("Please select at least one media type (Photos or Videos)!", "error")
+            return
 
         # Set creators
         self.state.config.user_names = set(selected_creators)

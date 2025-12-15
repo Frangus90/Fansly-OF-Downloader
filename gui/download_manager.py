@@ -118,6 +118,11 @@ class DownloadManager:
 
     def _handle_progress(self, data: dict):
         """Convert dict to ProgressUpdate and send to callback"""
+        # Debug: Log progress received
+        self.log_callback(
+            f"[Progress] type={data.get('type')} current={data.get('current')}/{data.get('total')} file={data.get('current_file', '')[:30]}",
+            "debug"
+        )
         update = ProgressUpdate(
             type=data.get("type", "unknown"),
             current=data.get("current", 0),
@@ -223,6 +228,11 @@ class OnlyFansDownloadManager:
 
     def _handle_progress(self, data: dict):
         """Convert dict to ProgressUpdate"""
+        # Debug: Log progress received
+        self.log_callback(
+            f"[OF Progress] type={data.get('type')} current={data.get('current')}/{data.get('total')} file={data.get('current_file', '')[:30]}",
+            "debug"
+        )
         update = ProgressUpdate(
             type=data.get("type", "unknown"),
             current=data.get("current", 0),
@@ -246,6 +256,6 @@ class OnlyFansDownloadManager:
             self.progress_callback(update)
         except Exception as ex:
             try:
-                self.log_callback(f"Progress callback error: {ex}", "error")
+                self.log_callback(f"OF Progress callback error: {ex}", "error")
             except Exception:
                 print(f"Progress callback error: {ex}")

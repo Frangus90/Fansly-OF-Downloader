@@ -119,6 +119,16 @@ def download_media(config: FanslyConfig, state: DownloadState, accessible_media:
             print_info("Media download stopped by user")
             return
 
+        # Skip audio entirely (user preference - never download audio)
+        if media_item.mimetype and 'audio' in media_item.mimetype:
+            continue
+
+        # Skip media types user doesn't want
+        if media_item.mimetype and 'image' in media_item.mimetype and not config.download_photos:
+            continue
+        if media_item.mimetype and 'video' in media_item.mimetype and not config.download_videos:
+            continue
+
         # Send progress update for current file (GUI)
         if config.gui_mode and config.progress_callback:
             config.progress_callback({

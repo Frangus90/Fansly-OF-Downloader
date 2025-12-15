@@ -171,7 +171,7 @@ class OnlyFansApi:
         # Based on OF-Scraper implementation
         params = {
             'limit': limit,
-            'order': 'publish_date_asc',
+            'order': 'publish_date_desc',  # Newest posts first
             'skip_users': 'all',
             'skip_users_dups': '1',
             'pinned': '0',

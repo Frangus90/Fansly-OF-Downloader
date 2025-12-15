@@ -14,7 +14,7 @@ from gui.app import create_app
 
 # BUILD VERIFICATION - Updated each time we rebuild
 # This helps confirm we're running the latest build
-BUILD_TIMESTAMP = "2025-01-13_DIAGNOSTIC_BUILD"
+BUILD_TIMESTAMP = "v1.2.5_2025-12-15_1722"
 
 
 def main():

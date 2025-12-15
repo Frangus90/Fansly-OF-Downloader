@@ -21,6 +21,22 @@ def download_timeline(config: OnlyFansConfig, state: DownloadState) -> None:
         config: OnlyFans configuration
         state: Download state for this creator
     """
+    # Track totals for progress reporting
+    total_media = 0
+
+    # GUI progress callback helper
+    def send_progress(current, total, filename='', status='running'):
+        if config.gui_mode and config.progress_callback:
+            config.progress_callback({
+                'type': 'timeline',
+                'current': current,
+                'total': total,
+                'current_file': filename,
+                'status': status,
+                'duplicates': 0,
+                'downloaded': total_media
+            })
+
     try:
         api = config.get_api()
 
@@ -54,7 +70,6 @@ def download_timeline(config: OnlyFansConfig, state: DownloadState) -> None:
 
         before_cursor = None
         total_posts = 0
-        total_media = 0
 
         while True:
             try:
@@ -95,6 +110,25 @@ def download_timeline(config: OnlyFansConfig, state: DownloadState) -> None:
                         if config.stop_flag and config.stop_flag.is_set():
                             print_warning("Download stopped by user")
                             break
+
+                        media_type = media.get('type', 'unknown')
+
+                        # Skip audio entirely (user preference)
+                        if media_type == 'audio':
+                            continue
+
+                        # Skip media types user doesn't want
+                        if media_type in ('photo', 'gif') and not config.download_photos:
+                            continue
+                        if media_type == 'video' and not config.download_videos:
+                            continue
+
+                        # Send progress update before download
+                        send_progress(
+                            current=total_media + 1,
+                            total=total_media + len(media_items),
+                            filename=media.get('filename', '')
+                        )
 
                         if download_media_item(config, state, media):
                             total_media += 1
@@ -143,6 +177,14 @@ def download_timeline(config: OnlyFansConfig, state: DownloadState) -> None:
         print_info(f"\n✓ Timeline download complete!")
         print_info(f"  Posts processed: {total_posts}")
         print_info(f"  Media downloaded: {total_media}")
+
+        # Send completion progress
+        send_progress(
+            current=total_media,
+            total=total_media,
+            filename='',
+            status='complete'
+        )
 
         state.files_downloaded = total_media
 

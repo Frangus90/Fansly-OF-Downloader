@@ -233,6 +233,10 @@ def load_config(config: FanslyConfig) -> None:
         config.prompt_on_exit = config._parser.getboolean(options_section, 'prompt_on_exit', fallback=True)
         config.incremental_mode = config._parser.getboolean(options_section, 'incremental_mode', fallback=False)
 
+        # Media type filters
+        config.download_photos = config._parser.getboolean(options_section, 'download_photos', fallback=True)
+        config.download_videos = config._parser.getboolean(options_section, 'download_videos', fallback=True)
+
         # Numbers
         config.timeline_retries = config._parser.getint(options_section, 'timeline_retries', fallback=1)
         config.timeline_delay_seconds = config._parser.getint(options_section, 'timeline_delay_seconds', fallback=60)

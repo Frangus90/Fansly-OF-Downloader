@@ -105,6 +105,10 @@ class FanslyConfig(object):
     # Only applies when creator has no download history and not in incremental mode
     max_posts_per_creator: Optional[int] = None
 
+    # Media type filters (which types to download)
+    download_photos: bool = True
+    download_videos: bool = True
+
     # Cache
     cached_device_id: Optional[str] = None
     cached_device_id_timestamp: Optional[int] = None
@@ -207,6 +211,8 @@ class FanslyConfig(object):
         self._parser.set('Options', 'interactive', str(self.interactive))
         self._parser.set('Options', 'prompt_on_exit', str(self.prompt_on_exit))
         self._parser.set('Options', 'incremental_mode', str(self.incremental_mode))
+        self._parser.set('Options', 'download_photos', str(self.download_photos))
+        self._parser.set('Options', 'download_videos', str(self.download_videos))
 
         # Unsigned ints
         self._parser.set('Options', 'timeline_retries', str(self.timeline_retries))
