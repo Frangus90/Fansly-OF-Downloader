@@ -141,6 +141,15 @@ class SettingsSection(ctk.CTkFrame):
         )
         post_limit_info.pack(side="left", padx=5)
 
+        # Auto-update setting
+        self.auto_update_var = ctk.BooleanVar(value=True)
+        self.auto_update_check = ctk.CTkCheckBox(
+            options_frame,
+            text="Check for updates on startup",
+            variable=self.auto_update_var,
+        )
+        self.auto_update_check.pack(anchor="w", pady=2)
+
         # Configure grid weights
         self.grid_columnconfigure(1, weight=1)
 
@@ -224,6 +233,10 @@ class SettingsSection(ctk.CTkFrame):
                 self.post_limit_var.set(False)
                 self.post_limit_entry.configure(state="disabled")
 
+        # Auto-update
+        if hasattr(self.config, 'auto_check_updates'):
+            self.auto_update_var.set(self.config.auto_check_updates)
+
     def save_to_config(self, config):
         """Save values to config"""
         # Download mode
@@ -264,6 +277,9 @@ class SettingsSection(ctk.CTkFrame):
                 config.max_posts_per_creator = None
         else:
             config.max_posts_per_creator = None
+
+        # Auto-update
+        config.auto_check_updates = self.auto_update_var.get()
 
     def validate(self):
         """Validate settings"""

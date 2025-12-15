@@ -237,6 +237,11 @@ def load_config(config: FanslyConfig) -> None:
         config.download_photos = config._parser.getboolean(options_section, 'download_photos', fallback=True)
         config.download_videos = config._parser.getboolean(options_section, 'download_videos', fallback=True)
 
+        # Auto-update settings
+        config.auto_check_updates = config._parser.getboolean(options_section, 'auto_check_updates', fallback=True)
+        skipped = config._parser.get(options_section, 'skipped_update_version', fallback='')
+        config.skipped_update_version = skipped if skipped else None
+
         # Numbers
         config.timeline_retries = config._parser.getint(options_section, 'timeline_retries', fallback=1)
         config.timeline_delay_seconds = config._parser.getint(options_section, 'timeline_delay_seconds', fallback=60)

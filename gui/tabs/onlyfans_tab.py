@@ -7,7 +7,7 @@ import customtkinter as ctk
 from gui.layout import build_tools_section
 
 
-def build_onlyfans_layout(parent, state, handlers, toggle_log_callback=None):
+def build_onlyfans_layout(parent, state, handlers, toggle_log_callback=None, check_update_callback=None):
     """Build OnlyFans UI layout (mirrors Fansly structure)"""
     main_frame = ctk.CTkFrame(parent)
     main_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -44,8 +44,8 @@ def build_onlyfans_layout(parent, state, handlers, toggle_log_callback=None):
     # Control buttons
     sections["buttons"] = build_of_control_buttons(left_frame, handlers)
 
-    # Status bar (includes log toggle button)
-    sections["status"] = build_of_status_bar(left_frame, toggle_log_callback)
+    # Status bar (includes log toggle button and update button)
+    sections["status"] = build_of_status_bar(left_frame, toggle_log_callback, check_update_callback)
 
     # RIGHT COLUMN
     right_frame = ctk.CTkFrame(main_frame)
@@ -93,8 +93,8 @@ def build_of_control_buttons(parent, handlers):
     return {"frame": button_frame, "start": start_btn, "stop": stop_btn}
 
 
-def build_of_status_bar(parent, toggle_log_callback=None):
-    """Build OF status bar with log toggle button"""
+def build_of_status_bar(parent, toggle_log_callback=None, check_update_callback=None):
+    """Build OF status bar with log toggle button and check for update button"""
     status_frame = ctk.CTkFrame(parent)
     status_frame.pack(fill="x", padx=10, pady=(5, 10))
 
@@ -119,4 +119,18 @@ def build_of_status_bar(parent, toggle_log_callback=None):
         )
         log_button.pack(side="right", padx=5)
 
-    return {"label": status_label, "log_button": log_button}
+    # Check for Update button (right, before log button)
+    update_button = None
+    if check_update_callback:
+        update_button = ctk.CTkButton(
+            status_frame,
+            text="Check for Update",
+            command=check_update_callback,
+            width=130,
+            height=28,
+            fg_color="#6c757d",
+            hover_color="#5a6268"
+        )
+        update_button.pack(side="right", padx=5)
+
+    return {"label": status_label, "log_button": log_button, "update_button": update_button}

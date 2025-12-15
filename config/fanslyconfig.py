@@ -109,6 +109,10 @@ class FanslyConfig(object):
     download_photos: bool = True
     download_videos: bool = True
 
+    # Auto-update settings
+    auto_check_updates: bool = True
+    skipped_update_version: Optional[str] = None
+
     # Cache
     cached_device_id: Optional[str] = None
     cached_device_id_timestamp: Optional[int] = None
@@ -213,6 +217,8 @@ class FanslyConfig(object):
         self._parser.set('Options', 'incremental_mode', str(self.incremental_mode))
         self._parser.set('Options', 'download_photos', str(self.download_photos))
         self._parser.set('Options', 'download_videos', str(self.download_videos))
+        self._parser.set('Options', 'auto_check_updates', str(self.auto_check_updates))
+        self._parser.set('Options', 'skipped_update_version', self.skipped_update_version or '')
 
         # Unsigned ints
         self._parser.set('Options', 'timeline_retries', str(self.timeline_retries))

@@ -144,6 +144,21 @@ class OnlyFansSettingsSection(ctk.CTkFrame):
         )
         self.rate_limit_value_label.pack(side="left", padx=5)
 
+        # Auto-update setting (row 6)
+        auto_update_label = ctk.CTkLabel(self, text="Updates:", anchor="w")
+        auto_update_label.grid(row=6, column=0, padx=10, pady=5, sticky="w")
+
+        auto_update_frame = ctk.CTkFrame(self)
+        auto_update_frame.grid(row=6, column=1, columnspan=2, padx=10, pady=5, sticky="w")
+
+        self.auto_update_var = ctk.BooleanVar(value=True)
+        self.auto_update_check = ctk.CTkCheckBox(
+            auto_update_frame,
+            text="Check for updates on startup",
+            variable=self.auto_update_var,
+        )
+        self.auto_update_check.pack(anchor="w", pady=2)
+
         # Configure grid weights
         self.grid_columnconfigure(1, weight=1)
 
@@ -219,6 +234,10 @@ class OnlyFansSettingsSection(ctk.CTkFrame):
                 self.post_limit_var.set(False)
                 self.post_limit_entry.configure(state="disabled")
 
+        # Auto-update
+        if hasattr(self.config, 'auto_check_updates'):
+            self.auto_update_var.set(self.config.auto_check_updates)
+
     def save_to_config(self, config):
         """Save values to config"""
         from config.modes import DownloadMode
@@ -253,6 +272,9 @@ class OnlyFansSettingsSection(ctk.CTkFrame):
                 config.max_posts_per_creator = None
         else:
             config.max_posts_per_creator = None
+
+        # Auto-update
+        config.auto_check_updates = self.auto_update_var.get()
 
     def validate(self):
         """Validate settings"""

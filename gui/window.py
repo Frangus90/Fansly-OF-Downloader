@@ -3,11 +3,21 @@ Main application window
 """
 
 import customtkinter as ctk
+import tkinter.messagebox as messagebox
 from pathlib import Path
+from typing import Optional
+
 from gui.layout import build_layout
 from gui.handlers import EventHandlers
 from gui.state import AppState
 from gui.logger import log
+from updater.auto_update import (
+    UpdateInfo,
+    check_for_update_async,
+    download_update_async,
+    apply_update,
+    is_running_as_exe
+)
 
 
 class MainWindow(ctk.CTk):
@@ -91,6 +101,10 @@ class MainWindow(ctk.CTk):
         # Application state
         self.app_state = AppState()
 
+        # Update banner (will be shown when update available)
+        self.update_banner = None
+        self.current_update_info: Optional[UpdateInfo] = None
+
         if wizard_was_completed:
             log(f"Config loaded - token: {'SET' if self.app_state.config.token else 'NOT SET'}")
             log(f"Config loaded - user_agent: {'SET' if self.app_state.config.user_agent else 'NOT SET'}")
@@ -112,7 +126,8 @@ class MainWindow(ctk.CTk):
             self.tab_view.tab("Fansly"),
             self.app_state,
             self.handlers,
-            toggle_log_callback=self.toggle_log_window
+            toggle_log_callback=self.toggle_log_window,
+            check_update_callback=self._on_check_update_clicked
         )
 
         # Build OnlyFans UI in second tab
@@ -126,7 +141,8 @@ class MainWindow(ctk.CTk):
             self.tab_view.tab("OnlyFans"),
             self.of_app_state,
             self.of_handlers,
-            toggle_log_callback=self.toggle_log_window
+            toggle_log_callback=self.toggle_log_window,
+            check_update_callback=self._on_check_update_clicked
         )
         self.of_handlers.set_sections(self.of_sections)
 
@@ -147,6 +163,10 @@ class MainWindow(ctk.CTk):
 
         if wizard_was_completed:
             log("App initialization complete after wizard")
+
+        # Schedule auto-update check (2 second delay for app to settle)
+        if self.app_state.config.auto_check_updates:
+            self.after(2000, self._check_for_updates_on_startup)
 
     def on_close(self):
         """Handle window close event"""
@@ -247,3 +267,229 @@ class MainWindow(ctk.CTk):
     def run(self):
         """Start the GUI main loop"""
         self.mainloop()
+
+    # ========== Auto-Update Methods ==========
+
+    def _check_for_updates_on_startup(self):
+        """Check for updates on startup (runs in background)"""
+        log("Checking for updates...")
+
+        check_for_update_async(
+            current_version=self.app_state.config.program_version,
+            skipped_version=self.app_state.config.skipped_update_version,
+            callback=self._on_startup_update_check_result,
+            force=False
+        )
+
+    def _on_check_update_clicked(self):
+        """Handle manual check for update button click"""
+        log("Manual update check initiated...")
+
+        # Disable buttons while checking
+        if self.sections and "status" in self.sections:
+            btn = self.sections["status"].get("update_button")
+            if btn:
+                btn.configure(state="disabled", text="Checking...")
+
+        if self.of_sections and "status" in self.of_sections:
+            btn = self.of_sections["status"].get("update_button")
+            if btn:
+                btn.configure(state="disabled", text="Checking...")
+
+        # Force check (ignore skipped version)
+        check_for_update_async(
+            current_version=self.app_state.config.program_version,
+            skipped_version=None,  # Ignore skipped for manual check
+            callback=self._on_manual_update_check_result,
+            force=True
+        )
+
+    def _on_startup_update_check_result(self, update_info: Optional[UpdateInfo]):
+        """Handle result of startup update check (called from background thread)"""
+        # Schedule on main thread
+        self.after(0, lambda: self._handle_update_check_result(update_info, is_manual=False))
+
+    def _on_manual_update_check_result(self, update_info: Optional[UpdateInfo]):
+        """Handle result of manual update check (called from background thread)"""
+        # Schedule on main thread
+        self.after(0, lambda: self._handle_update_check_result(update_info, is_manual=True))
+
+    def _handle_update_check_result(self, update_info: Optional[UpdateInfo], is_manual: bool):
+        """Process update check result on main thread"""
+        # Re-enable buttons
+        self._reset_update_buttons()
+
+        if update_info:
+            log(f"Update available: v{update_info.version}")
+            self.current_update_info = update_info
+            self._show_update_banner(update_info)
+        else:
+            if is_manual:
+                log("Already running the latest version")
+                self.log_window.add_log("You are running the latest version!", "info")
+
+    def _reset_update_buttons(self):
+        """Reset update buttons to default state"""
+        if self.sections and "status" in self.sections:
+            btn = self.sections["status"].get("update_button")
+            if btn:
+                btn.configure(state="normal", text="Check for Update")
+
+        if self.of_sections and "status" in self.of_sections:
+            btn = self.of_sections["status"].get("update_button")
+            if btn:
+                btn.configure(state="normal", text="Check for Update")
+
+    def _show_update_banner(self, update_info: UpdateInfo):
+        """Show the update notification banner"""
+        # Hide existing banner if any
+        self._hide_update_banner()
+
+        from gui.widgets.update_banner import UpdateBanner
+
+        self.update_banner = UpdateBanner(
+            self,
+            update_info=update_info,
+            on_update=self._start_update,
+            on_skip=self._skip_version,
+            on_dismiss=self._hide_update_banner
+        )
+
+        # Pack at top of window (before tab view)
+        self.update_banner.pack(fill="x", padx=10, pady=(10, 0), before=self.tab_view)
+
+    def _hide_update_banner(self):
+        """Hide and destroy the update banner"""
+        if self.update_banner:
+            self.update_banner.destroy()
+            self.update_banner = None
+
+    def _skip_version(self, version: str):
+        """Skip this version and don't notify again"""
+        log(f"Skipping version {version}")
+
+        # Save to config
+        self.app_state.config.skipped_update_version = version
+        self.app_state.config._save_config()
+
+        # Hide banner
+        self._hide_update_banner()
+
+        self.log_window.add_log(f"Version {version} will be skipped", "info")
+
+    def _start_update(self):
+        """Start downloading and applying the update"""
+        if not self.current_update_info:
+            return
+
+        # Check if running as exe
+        if not is_running_as_exe():
+            messagebox.showinfo(
+                "Update Not Available",
+                "Auto-update is only available when running as an executable.\n\n"
+                "Please download the latest version manually from GitHub."
+            )
+            return
+
+        log(f"Starting download of v{self.current_update_info.version}...")
+
+        # Replace banner with progress banner
+        self._hide_update_banner()
+
+        from gui.widgets.update_banner import DownloadProgressBanner
+
+        self.update_banner = DownloadProgressBanner(
+            self,
+            on_cancel=self._cancel_update
+        )
+        self.update_banner.pack(fill="x", padx=10, pady=(10, 0), before=self.tab_view)
+
+        # Start download in background
+        download_update_async(
+            download_url=self.current_update_info.download_url,
+            progress_callback=self._on_download_progress,
+            complete_callback=self._on_download_complete
+        )
+
+    def _on_download_progress(self, downloaded: int, total: int):
+        """Handle download progress (called from background thread)"""
+        self.after(0, lambda: self._update_download_progress(downloaded, total))
+
+    def _update_download_progress(self, downloaded: int, total: int):
+        """Update download progress on main thread"""
+        if self.update_banner and hasattr(self.update_banner, 'update_progress'):
+            self.update_banner.update_progress(downloaded, total)
+
+    def _on_download_complete(self, downloaded_path: Optional[Path]):
+        """Handle download completion (called from background thread)"""
+        self.after(0, lambda: self._handle_download_complete(downloaded_path))
+
+    def _handle_download_complete(self, downloaded_path: Optional[Path]):
+        """Process download completion on main thread"""
+        if downloaded_path:
+            log(f"Download complete: {downloaded_path}")
+
+            if self.update_banner and hasattr(self.update_banner, 'set_complete'):
+                self.update_banner.set_complete()
+
+            # Ask user to restart
+            self.after(500, lambda: self._show_restart_dialog(downloaded_path))
+        else:
+            log("Download failed")
+
+            if self.update_banner and hasattr(self.update_banner, 'set_error'):
+                self.update_banner.set_error("Download failed")
+
+            self.log_window.add_log("Update download failed. Please try again or download manually.", "error")
+
+    def _show_restart_dialog(self, downloaded_path: Path):
+        """Show restart confirmation dialog"""
+        result = messagebox.askyesno(
+            "Update Downloaded",
+            f"Version {self.current_update_info.version} has been downloaded.\n\n"
+            "Would you like to restart now to apply the update?\n\n"
+            "(The application will close and reopen automatically)"
+        )
+
+        if result:
+            self._apply_update_and_restart(downloaded_path)
+        else:
+            self._hide_update_banner()
+            self.log_window.add_log("Update will be applied next time you start the application", "info")
+
+    def _apply_update_and_restart(self, downloaded_path: Path):
+        """Apply update and restart the application"""
+        log("Applying update and restarting...")
+
+        success = apply_update(downloaded_path)
+
+        if success:
+            # Exit application - update script will restart it
+            self.log_window.add_log("Restarting to apply update...", "info")
+            self.after(500, self._force_close)
+        else:
+            messagebox.showerror(
+                "Update Failed",
+                "Failed to apply the update.\n\n"
+                "Please download the latest version manually from GitHub."
+            )
+            self._hide_update_banner()
+
+    def _cancel_update(self):
+        """Cancel the update download"""
+        log("Update cancelled by user")
+        self._hide_update_banner()
+
+    def _force_close(self):
+        """Force close the application without prompts"""
+        # Save state
+        if hasattr(self, 'log_window'):
+            self.log_window._save_window_state()
+        self.app_state.save_gui_state()
+
+        # Destroy window
+        self.destroy()
+
+        # Exit process
+        import sys
+        sys.exit(0)
