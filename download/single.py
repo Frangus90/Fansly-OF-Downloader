@@ -15,6 +15,18 @@ from utils.common import is_valid_post_id, get_post_id_from_request
 def download_single_post(config: FanslyConfig, state: DownloadState):
     """Downloads a single post."""
 
+    # GUI progress callback helper
+    def send_progress(current: int, total: int, filename: str = '', status: str = 'running'):
+        if hasattr(config, 'gui_mode') and config.gui_mode and hasattr(config, 'progress_callback') and config.progress_callback:
+            config.progress_callback({
+                'type': 'single',
+                'current': current,
+                'total': total,
+                'current_file': filename,
+                'status': status,
+                'downloaded': state.pic_count + state.vid_count
+            })
+
     # This is important for directory creation later on.
     state.download_type = DownloadType.SINGLE
 
@@ -93,18 +105,29 @@ def download_single_post(config: FanslyConfig, state: DownloadState):
             dedupe_init(config, state)
 
             all_media_ids = get_unique_media_ids(post_object)
+            total_media = len(all_media_ids)
+            print_info(f"Found {total_media} media item(s)")
+
+            # Send initial progress
+            send_progress(0, total_media, '', 'running')
+
             media_infos = download_media_infos(config, all_media_ids)
 
             process_download_accessible_media(config, state, media_infos, post_id)
+
+            # Send completion progress
+            send_progress(total_media, total_media, '', 'complete')
 
             if state.duplicate_count > 0 and config.show_downloads and not config.show_skipped_downloads:
                 print_info(
                     f"Skipped {state.duplicate_count} already downloaded media item{'' if state.duplicate_count == 1 else 's'}."
                 )
-        
+
         else:
             print_warning(f"Could not find any accessible content in post {post_id}.")
-    
+            send_progress(0, 0, '', 'complete')
+
     else:
         print_error(f"Failed to download post {post_id}. Response code: {post_response.status_code}\n{post_response.text}", 20)
+        send_progress(0, 0, '', 'error')
         input_enter_continue(config.interactive)

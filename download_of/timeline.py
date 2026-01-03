@@ -186,7 +186,7 @@ def download_timeline(config: OnlyFansConfig, state: DownloadState) -> None:
             status='complete'
         )
 
-        state.files_downloaded = total_media
+        state.pic_count = total_media
 
     except Exception as e:
         print_error(f"Timeline download failed: {e}")

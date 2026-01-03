@@ -8,6 +8,8 @@ import subprocess
 from tkinter import filedialog
 from pathlib import Path
 
+from gui.widgets.single_post_input import SinglePostInput
+
 
 class SettingsSection(ctk.CTkFrame):
     """Download settings configuration section"""
@@ -20,38 +22,58 @@ class SettingsSection(ctk.CTkFrame):
         title = ctk.CTkLabel(
             self, text="Download Settings", font=("Arial", 16, "bold"), anchor="w"
         )
-        title.grid(row=0, column=0, columnspan=3, padx=10, pady=(10, 5), sticky="w")
+        title.grid(row=0, column=0, columnspan=4, padx=10, pady=(10, 5), sticky="w")
 
         # Download Mode
         mode_label = ctk.CTkLabel(self, text="Download Mode:", anchor="w")
         mode_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
 
         mode_frame = ctk.CTkFrame(self)
-        mode_frame.grid(row=1, column=1, columnspan=2, padx=10, pady=5, sticky="w")
+        mode_frame.grid(row=1, column=1, columnspan=3, padx=10, pady=5, sticky="w")
 
         self.mode_var = ctk.StringVar(value="normal")
 
         self.normal_radio = ctk.CTkRadioButton(
-            mode_frame, text="Normal", variable=self.mode_var, value="normal"
+            mode_frame, text="Normal", variable=self.mode_var, value="normal",
+            command=self._on_mode_change
         )
         self.normal_radio.pack(side="left", padx=5)
 
         self.timeline_radio = ctk.CTkRadioButton(
-            mode_frame, text="Timeline", variable=self.mode_var, value="timeline"
+            mode_frame, text="Timeline", variable=self.mode_var, value="timeline",
+            command=self._on_mode_change
         )
         self.timeline_radio.pack(side="left", padx=5)
 
         self.messages_radio = ctk.CTkRadioButton(
-            mode_frame, text="Messages", variable=self.mode_var, value="messages"
+            mode_frame, text="Messages", variable=self.mode_var, value="messages",
+            command=self._on_mode_change
         )
         self.messages_radio.pack(side="left", padx=5)
 
+        self.single_radio = ctk.CTkRadioButton(
+            mode_frame, text="Single Post", variable=self.mode_var, value="single",
+            command=self._on_mode_change
+        )
+        self.single_radio.pack(side="left", padx=5)
+
+        # Single Post Input (shown only when Single mode selected)
+        self.single_post_frame = ctk.CTkFrame(self)
+        self.single_post_input = SinglePostInput(
+            self.single_post_frame,
+            platform="fansly"
+        )
+        self.single_post_input.pack(fill="x", padx=5, pady=5)
+        # Initially hidden
+        self.single_post_frame.grid(row=2, column=0, columnspan=4, padx=10, pady=5, sticky="ew")
+        self.single_post_frame.grid_remove()
+
         # Media Types
         media_label = ctk.CTkLabel(self, text="Media Types:", anchor="w")
-        media_label.grid(row=2, column=0, padx=10, pady=5, sticky="w")
+        media_label.grid(row=3, column=0, padx=10, pady=5, sticky="w")
 
         media_frame = ctk.CTkFrame(self)
-        media_frame.grid(row=2, column=1, columnspan=2, padx=10, pady=5, sticky="w")
+        media_frame.grid(row=3, column=1, columnspan=2, padx=10, pady=5, sticky="w")
 
         self.photos_var = ctk.BooleanVar(value=True)
         self.photos_check = ctk.CTkCheckBox(
@@ -67,27 +89,27 @@ class SettingsSection(ctk.CTkFrame):
 
         # Download Directory
         dir_label = ctk.CTkLabel(self, text="Download Directory:", anchor="w")
-        dir_label.grid(row=3, column=0, padx=10, pady=5, sticky="w")
+        dir_label.grid(row=4, column=0, padx=10, pady=5, sticky="w")
 
         self.dir_entry = ctk.CTkEntry(self, width=300)
-        self.dir_entry.grid(row=3, column=1, padx=10, pady=5, sticky="ew")
+        self.dir_entry.grid(row=4, column=1, padx=10, pady=5, sticky="ew")
 
         browse_btn = ctk.CTkButton(
             self, text="Browse...", command=self.browse_directory, width=100
         )
-        browse_btn.grid(row=3, column=2, padx=(10, 5), pady=5)
+        browse_btn.grid(row=4, column=2, padx=(10, 5), pady=5)
 
         open_folder_btn = ctk.CTkButton(
             self, text="Open Folder", command=self._open_download_folder, width=100
         )
-        open_folder_btn.grid(row=3, column=3, padx=(0, 10), pady=5)
+        open_folder_btn.grid(row=4, column=3, padx=(0, 10), pady=5)
 
         # Options
         options_label = ctk.CTkLabel(self, text="Options:", anchor="w")
-        options_label.grid(row=4, column=0, padx=10, pady=5, sticky="nw")
+        options_label.grid(row=5, column=0, padx=10, pady=5, sticky="nw")
 
         options_frame = ctk.CTkFrame(self)
-        options_frame.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="w")
+        options_frame.grid(row=5, column=1, columnspan=2, padx=10, pady=5, sticky="w")
 
         self.preview_var = ctk.BooleanVar(value=False)
         self.preview_check = ctk.CTkCheckBox(
@@ -156,6 +178,15 @@ class SettingsSection(ctk.CTkFrame):
         # Load from config
         self.load_from_config()
 
+    def _on_mode_change(self):
+        """Handle download mode change"""
+        mode = self.mode_var.get()
+        if mode == "single":
+            self.single_post_frame.grid()
+            self.single_post_input.focus()
+        else:
+            self.single_post_frame.grid_remove()
+
     def _on_post_limit_toggle(self):
         """Toggle post limit entry field"""
         if self.post_limit_var.get():
@@ -195,12 +226,15 @@ class SettingsSection(ctk.CTkFrame):
         # Download mode
         if hasattr(self.config, 'download_mode'):
             mode_str = str(self.config.download_mode).lower()
-            if 'timeline' in mode_str:
+            if 'single' in mode_str:
+                self.mode_var.set("single")
+            elif 'timeline' in mode_str:
                 self.mode_var.set("timeline")
             elif 'message' in mode_str:
                 self.mode_var.set("messages")
             else:
                 self.mode_var.set("normal")
+            self._on_mode_change()
 
         # Directory
         if self.config.download_directory:
@@ -239,17 +273,28 @@ class SettingsSection(ctk.CTkFrame):
 
     def save_to_config(self, config):
         """Save values to config"""
+        from config.modes import DownloadMode
+        from utils.common import get_post_id_from_request
+
         # Download mode
         mode = self.mode_var.get()
-        if mode == "timeline":
-            from config.modes import DownloadMode
+        if mode == "single":
+            config.download_mode = DownloadMode.SINGLE
+            # Get post ID from input
+            post_input = self.single_post_input.get_post_input()
+            if post_input:
+                config.post_id = get_post_id_from_request(post_input)
+            else:
+                config.post_id = None
+        elif mode == "timeline":
             config.download_mode = DownloadMode.TIMELINE
+            config.post_id = None
         elif mode == "messages":
-            from config.modes import DownloadMode
             config.download_mode = DownloadMode.MESSAGES
+            config.post_id = None
         else:
-            from config.modes import DownloadMode
             config.download_mode = DownloadMode.NORMAL
+            config.post_id = None
 
         # Directory
         dir_path = self.dir_entry.get().strip()

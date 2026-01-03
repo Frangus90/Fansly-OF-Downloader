@@ -18,7 +18,7 @@ from config.onlyfans_config import (
     load_onlyfans_config,
     validate_onlyfans_config
 )
-from download_of import download_timeline, get_creator_account_info
+from download_of import download_timeline, get_creator_account_info, download_single_post_of
 from download.downloadstate import DownloadState
 from errors import (
     EXIT_SUCCESS,
@@ -96,9 +96,15 @@ def main(config: OnlyFansConfig) -> int:
         print_error(f"Failed to load configuration: {e}")
         return CONFIG_ERROR
 
-    # Validate configuration
-    if not validate_onlyfans_config(config):
-        return CONFIG_ERROR
+    # Validate configuration (skip creator check for Single mode)
+    if config.download_mode != "Single":
+        if not validate_onlyfans_config(config):
+            return CONFIG_ERROR
+    else:
+        # Single mode only needs credentials, not creators
+        if not config.has_credentials():
+            print_error("OnlyFans credentials not configured for single post mode")
+            return CONFIG_ERROR
 
     print()
     print_info(f"Session: {config.sess[:20]}..." if config.sess else "Session: Not set")
@@ -118,6 +124,33 @@ def main(config: OnlyFansConfig) -> int:
     except Exception as e:
         print_error(f"✗ Authentication failed: {e}")
         return CONFIG_ERROR
+
+    # Handle Single Post mode (before creator loop - creator is determined from post)
+    if config.download_mode == "Single":
+        print()
+        print_info("=" * 70)
+        print_info("Single Post Download Mode")
+        print_info("=" * 70)
+
+        try:
+            state = DownloadState()
+            download_single_post_of(config, state)
+
+            print()
+            print_info(f"  Files downloaded: {state.pic_count + state.vid_count}")
+
+        except Exception as e:
+            print_error(f"Single post download failed: {e}")
+            if config.interactive:
+                input_enter_continue(True)
+            exit_code = DOWNLOAD_ERROR
+
+        timer.stop()
+        print()
+        print_info("=" * 70)
+        print_info(f"Total time: {timer.elapsed_str()}")
+        print_info("=" * 70)
+        return exit_code
 
     # Process each creator
     for creator_name in sorted(config.user_names):
@@ -150,7 +183,7 @@ def main(config: OnlyFansConfig) -> int:
                 # Show stats
                 print()
                 print_info(f"✓ Completed: {creator_name}")
-                print_info(f"  Files downloaded: {state.files_downloaded}")
+                print_info(f"  Files downloaded: {state.pic_count + state.vid_count}")
 
             except ApiError as e:
                 print_error(f"API error processing {creator_name}: {e}")

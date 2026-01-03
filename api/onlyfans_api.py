@@ -3,9 +3,9 @@
 Handles all OnlyFans API interactions including:
 - User/creator account information
 - Timeline posts
+- Single posts
 - Messages (future)
 - Collections/Vault (future)
-- Single posts (future)
 
 Completely separate from Fansly API.
 """

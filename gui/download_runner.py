@@ -72,9 +72,8 @@ def run_onlyfans_download(config, stop_flag, progress_callback, log_callback):
     This function is called in a worker thread for OF downloads.
     """
     # Import OF download modules
-    from download_of import download_timeline, get_creator_account_info
+    from download_of import download_timeline, get_creator_account_info, download_single_post_of
     from download.downloadstate import DownloadState
-    from config.modes import DownloadMode
     from textio import print_info
 
     # Inject callbacks into config
@@ -87,7 +86,17 @@ def run_onlyfans_download(config, stop_flag, progress_callback, log_callback):
     from textio import set_gui_config
     set_gui_config(config)
 
-    # Process each creator
+    # Debug: Show download mode
+    print_info(f"Download mode: {config.download_mode}")
+
+    # Handle Single Post mode (no creator loop needed)
+    if config.download_mode == "Single":
+        print_info("Starting single post download...")
+        state = DownloadState()
+        download_single_post_of(config, state)
+        return True
+
+    # Process each creator for Timeline mode
     for creator_name in config.user_names:
         if stop_flag.is_set():
             break
@@ -97,11 +106,8 @@ def run_onlyfans_download(config, stop_flag, progress_callback, log_callback):
         # Get creator info
         get_creator_account_info(config, state)
 
-        # Debug: Show download mode
-        print_info(f"Download mode: {config.download_mode}")
-
-        # Download timeline (only mode supported for now)
-        if config.download_mode in (DownloadMode.TIMELINE, DownloadMode.NORMAL):
+        # Download timeline
+        if config.download_mode in ("Timeline", "Normal"):
             print_info("Starting timeline download...")
             download_timeline(config, state)
 

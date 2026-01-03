@@ -50,6 +50,9 @@ class OnlyFansConfig:
     # Only applies when creator has no download history and not in incremental mode
     max_posts_per_creator: Optional[int] = None
 
+    # Single post download
+    post_id: Optional[str] = None
+
     # Media type filters (which types to download)
     download_photos: bool = True
     download_videos: bool = True
