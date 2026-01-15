@@ -82,10 +82,6 @@ On Linux, you may need to install Tkinter separately:
 sudo apt-get install python3-tk
 ```
 
-On Windows and macOS, the `Tkinter` module is typically included in the Python installer.
-
-Raw Python code versions of **Fansly Downloader NG** do not receive automatic updates. If an update is available you will be notified but need to manually download and set-up the [current repository](https://github.com/Frangus90/fansly-downloader-ng/archive/refs/heads/master.zip) again.
-
 ### OnlyFans
 
 OnlyFans is supported through both GUI and CLI:
@@ -134,48 +130,41 @@ python onlyfans_downloader.py -i
 The built-in Image Crop Tool allows you to batch process and crop downloaded images:
 
 **Features:**
-- **Bulk Processing** - Crop multiple images at once with individual settings
-- **Drag & Drop** - Drag images directly onto the window to add them
-- **Custom Aspect Ratios** - Apply specific aspect ratios (1:1, 16:9, 4:5, custom)
+- **Bulk Processing** - Process multiple images with individual settings
+- **Drag & Drop** - Add images by dragging onto window
+- **Custom Aspect Ratios** - Presets (1:1, 16:9, 4:5) or custom values
 - **Crop Alignment** - Position crops (center, top, bottom, left, right)
-- **Custom Presets** - Save frequently-used aspect ratios for quick access
-- **Live Preview** - Interactive canvas with real-time crop preview
-- **Format Options** - Export as JPEG, PNG, or WebP with quality control
+- **Live Preview** - Interactive canvas with real-time preview
+- **Format Options** - Export as JPEG, PNG, WebP, or AVIF (optional)
 - **Batch Export** - Process entire queue with one click
 
 **Compression Preview:**
-- **Estimated File Size** - See the compressed file size in real-time as you adjust settings
-- **Before/After Comparison** - Visual slider to compare original vs compressed quality side-by-side
-- **Zoom & Pan** - Scroll to zoom in on details, right-click drag to pan when zoomed
-- **SSIM Score** - Color-coded quality indicator (green = excellent, yellow = good, red = poor)
-- **Smart Format Detection** - Warns when PNG is selected (lossless, no quality difference to compare)
+- **Real-time File Size** - See compressed size as you adjust settings
+- **Before/After Comparison** - Slider to compare original vs compressed
+- **Zoom & Pan** - Scroll to zoom, right-click drag to pan
+- **SSIM Score** - Color-coded quality indicator (green/yellow/red)
+- **Smart Format Detection** - Warns for lossless formats (PNG)
 
 **Compression Modes:**
 - **Quick Mode** - Set target file size, auto-selects best format (JPEG > WebP > AVIF)
 - **Advanced Mode** - Full manual control with detailed settings
 
-**Advanced Compression Options:**
-- **Target File Size** - Compress to specific size (e.g., 5 MB) while maximizing quality
-- **MozJPEG Optimization** - 10-15% smaller files at same visual quality
-- **SSIM Quality Validation** - Warns when compression reduces perceptual quality below threshold
-- **Chroma Subsampling** - Choose quality (4:4:4), balanced (4:2:2), or smallest (4:2:0)
-- **Minimum Quality Floor** - Prevent over-compression by setting quality floor (60-90)
-- **Progressive JPEG** - Better loading experience for web
-- **AVIF Support** - Next-gen format for superior compression (optional)
+**Advanced Options:**
+- **Target File Size** - Compress to specific size while maximizing quality
+- **MozJPEG** - 10-15% smaller files at same visual quality
+- **SSIM Validation** - Warns when quality drops below threshold
+- **Chroma Subsampling** - 4:4:4 (quality), 4:2:2 (balanced), 4:2:0 (smallest)
+- **Quality Floor** - Prevent over-compression (60-90 range)
+- **Progressive JPEG** - Better web loading
+- **AVIF Support** - Next-gen compression (optional)
 
 **Usage:**
-1. Open Tools → Image Crop Tool from the main menu
-2. Upload images or drag-and-drop them onto the window
-3. Use the **Crop Preview** tab to adjust crop box on each image
-4. Switch to **Compress Preview** tab to compare original vs compressed quality
-5. Choose output format and quality settings
-6. Expand "Advanced Options" for compression fine-tuning
-7. Process batch to export all cropped images
-
-**File Handling:**
-- Automatically detects existing files and offers overwrite/skip options
-- Preserves original filenames by default
-- Supports all common image formats (.jpg, .png, .webp, .gif, .bmp)
+1. Open Tools → Image Crop Tool
+2. Add images (upload or drag-and-drop)
+3. **Crop Preview** tab - Adjust crop box per image
+4. **Compress Preview** tab - Compare quality with slider
+5. Choose Quick (target size) or Advanced (manual) mode
+6. Process batch to export
 
 ## CLI Usage
 
@@ -294,25 +283,24 @@ pip install -r requirements-dev.txt
 ## Troubleshooting
 
 **Empty fields after setup wizard:**
-- Check `fansly_downloader.log` for errors (Ctrl+L in GUI)
-- Ensure complete token and user agent are pasted
-- Try running setup wizard again
+- Check `fansly_downloader.log` (Ctrl+L in GUI)
+- Ensure complete token/user agent pasted
+- Re-run setup wizard
 
 **Downloads failing:**
-- Verify auth token using "Test Connection"
-- Check download path exists and has write permissions
-- Review log file for specific errors
-- Ensure active subscriptions to creators
+- Test connection using "Test Connection" button
+- Verify download path exists and writable
+- Check log file for errors
+- Ensure active creator subscriptions
 
 **Application crashes:**
-- Check `fansly_downloader.log` in application directory
-- Try deleting `config.ini` and `gui_state.json` for fresh setup
+- Check `fansly_downloader.log` in app directory
+- Delete `config.ini` and `gui_state.json` for fresh setup
 - Ensure Python 3.11+ if running from source
 
-**Where is the log file?**
-- Same directory as the application executable or Python script
-- Named `fansly_downloader.log` (or `fansly_downloader_ng.log` for CLI)
-- Contains all diagnostic output including errors and progress
+**Log file location:**
+- Same directory as executable/script
+- Named `fansly_downloader.log` (GUI) or `fansly_downloader_ng.log` (CLI)
 
 ## FAQ
 
@@ -329,7 +317,7 @@ A: While there are no guarantees, it's worth noting that among the 24,000+ previ
 A: No. You can only download content you have legitimate access to through your subscriptions. No paywall bypassing features will be added.
 
 **Q: Why do antivirus programs flag the executable?**
-A: The executable is not digitally signed (certificates are expensive), causing false positives. You can build your own executable from the source code or run the Python version directly. If you're knowledgeable with Python, you can decompile a PyInstaller executable using tools like [uncompyle6](https://github.com/rocky/python-uncompyle6/) to verify no harmful code is included.
+A: The executable is not digitally signed (certificates are expensive), causing false positives. Build your own from source or run the Python version directly.
 
 **Q: Can I use this on mobile?**
 A: No, mobile devices are not currently supported.
@@ -342,8 +330,6 @@ Please note that "Issue" tickets are reserved for reporting genuine or suspected
 ## What's New
 
 For the latest release notes and version history, see [ReleaseNotes.md](ReleaseNotes.md).
-
-⚠️ Due to a [hashing bug](../../issues/13) duplicate videos might be downloaded if a creator re-posts a lot. Downloaded videos will have to be renamed in a future version when video hashing is perfected.
 
 ## Contributing
 
