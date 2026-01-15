@@ -735,3 +735,326 @@ def ask_compression_action(
         suggested_dimensions
     )
     return dialog.get_result()
+
+
+class CTkCompressionFallbackDialog(ctk.CTkToplevel):
+    """Enhanced compression fallback dialog with format suggestions.
+
+    Provides options when target size cannot be achieved:
+    - Resize to suggested dimensions
+    - Try alternative format (if suggested)
+    - Save as-is with warning
+    - Skip/cancel
+    """
+
+    def __init__(
+        self,
+        parent,
+        filename: str,
+        current_size_mb: float,
+        target_size_mb: float,
+        current_dimensions: Tuple[int, int],
+        suggested_dimensions: Optional[Tuple[int, int]] = None,
+        suggested_format: Optional[str] = None,
+        suggested_format_size_mb: Optional[float] = None,
+    ):
+        super().__init__(parent)
+
+        self.result = None
+        self.apply_to_all = False
+
+        self.suggested_format = suggested_format
+        self.suggested_format_size_mb = suggested_format_size_mb
+
+        # Window setup
+        self.title("Target Size Cannot Be Reached")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+        self.attributes('-topmost', True)
+
+        # Build UI
+        self._build_ui(
+            filename,
+            current_size_mb,
+            target_size_mb,
+            current_dimensions,
+            suggested_dimensions,
+            suggested_format,
+            suggested_format_size_mb,
+        )
+
+        # Center on parent
+        self.update_idletasks()
+        self._center_on_parent(parent)
+
+        # Handle close
+        self.protocol("WM_DELETE_WINDOW", self._on_cancel)
+        self.bind("<Escape>", lambda e: self._on_cancel())
+
+    def _build_ui(
+        self,
+        filename: str,
+        current_size_mb: float,
+        target_size_mb: float,
+        current_dimensions: Tuple[int, int],
+        suggested_dimensions: Optional[Tuple[int, int]],
+        suggested_format: Optional[str],
+        suggested_format_size_mb: Optional[float],
+    ):
+        """Build the fallback dialog UI."""
+        main_frame = ctk.CTkFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Warning icon and title
+        title_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        title_frame.pack(fill="x", pady=(0, 15))
+
+        icon_label = ctk.CTkLabel(
+            title_frame,
+            text="!",
+            font=("Arial", 24, "bold"),
+            text_color="#f0ad4e",
+            width=40,
+            height=40
+        )
+        icon_label.pack(side="left", padx=(0, 10))
+
+        title_label = ctk.CTkLabel(
+            title_frame,
+            text="Target Size Cannot Be Reached",
+            font=("Arial", 14, "bold")
+        )
+        title_label.pack(side="left")
+
+        # Filename
+        filename_label = ctk.CTkLabel(
+            main_frame,
+            text=f"Image: {filename}",
+            font=("Arial", 11),
+            anchor="w"
+        )
+        filename_label.pack(fill="x", pady=(0, 10), anchor="w")
+
+        # Info box
+        info_frame = ctk.CTkFrame(main_frame, fg_color="#1a1a1a", corner_radius=8)
+        info_frame.pack(fill="x", pady=(0, 15))
+
+        self._add_info_row(info_frame, "Target:", f"{target_size_mb:.2f} MB")
+        self._add_info_row(
+            info_frame,
+            "Best achievable:",
+            f"{current_size_mb:.2f} MB",
+            color="#dc3545"
+        )
+
+        # Options section
+        options_label = ctk.CTkLabel(
+            main_frame,
+            text="Options:",
+            font=("Arial", 12, "bold"),
+            anchor="w"
+        )
+        options_label.pack(fill="x", pady=(0, 10), anchor="w")
+
+        # Option buttons (styled as cards)
+        options_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        options_frame.pack(fill="x", pady=(0, 15))
+
+        # Resize option
+        if suggested_dimensions:
+            resize_card = self._create_option_card(
+                options_frame,
+                "Resize Image",
+                f"Reduce to {suggested_dimensions[0]} x {suggested_dimensions[1]} to fit target",
+                "#28a745",
+                lambda: self._on_choice("resize")
+            )
+            resize_card.pack(fill="x", pady=(0, 5))
+
+        # Format suggestion option
+        if suggested_format and suggested_format_size_mb:
+            format_card = self._create_option_card(
+                options_frame,
+                f"Try {suggested_format} Format",
+                f"Estimated: {suggested_format_size_mb:.2f} MB with similar quality",
+                "#17a2b8",
+                lambda: self._on_choice("format")
+            )
+            format_card.pack(fill="x", pady=(0, 5))
+
+        # Save as-is option
+        keep_card = self._create_option_card(
+            options_frame,
+            "Save As-Is",
+            f"Keep at {current_size_mb:.2f} MB (exceeds target)",
+            "#f0ad4e",
+            lambda: self._on_choice("keep")
+        )
+        keep_card.pack(fill="x", pady=(0, 5))
+
+        # Apply to all checkbox
+        self.apply_all_var = ctk.BooleanVar(value=False)
+        apply_all_check = ctk.CTkCheckBox(
+            main_frame,
+            text="Apply to all similar cases",
+            variable=self.apply_all_var,
+        )
+        apply_all_check.pack(anchor="w", pady=(0, 15))
+
+        # Cancel button
+        cancel_btn = ctk.CTkButton(
+            main_frame,
+            text="Skip This Image",
+            command=self._on_cancel,
+            width=120,
+            height=32,
+            fg_color="transparent",
+            border_width=1,
+            border_color="#3b8ed0",
+            text_color="#3b8ed0"
+        )
+        cancel_btn.pack(anchor="w")
+
+    def _create_option_card(
+        self,
+        parent,
+        title: str,
+        description: str,
+        color: str,
+        command
+    ) -> ctk.CTkFrame:
+        """Create an option card button."""
+        card = ctk.CTkFrame(parent, fg_color="#2a2a2a", corner_radius=8)
+        card.configure(cursor="hand2")
+
+        # Bind click to entire card
+        card.bind("<Button-1>", lambda e: command())
+
+        content = ctk.CTkFrame(card, fg_color="transparent")
+        content.pack(fill="x", padx=15, pady=10)
+        content.bind("<Button-1>", lambda e: command())
+
+        title_label = ctk.CTkLabel(
+            content,
+            text=title,
+            font=("Arial", 12, "bold"),
+            text_color=color,
+            anchor="w"
+        )
+        title_label.pack(fill="x")
+        title_label.bind("<Button-1>", lambda e: command())
+
+        desc_label = ctk.CTkLabel(
+            content,
+            text=description,
+            font=("Arial", 10),
+            text_color="gray",
+            anchor="w"
+        )
+        desc_label.pack(fill="x")
+        desc_label.bind("<Button-1>", lambda e: command())
+
+        return card
+
+    def _add_info_row(
+        self,
+        parent,
+        label: str,
+        value: str,
+        color: str = "#3b8ed0"
+    ):
+        """Add info row to info box."""
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill="x", padx=15, pady=5)
+
+        label_widget = ctk.CTkLabel(row, text=label, width=120, anchor="w")
+        label_widget.pack(side="left")
+
+        value_widget = ctk.CTkLabel(
+            row,
+            text=value,
+            font=("Arial", 11, "bold"),
+            text_color=color,
+            anchor="w"
+        )
+        value_widget.pack(side="left", padx=(10, 0))
+
+    def _center_on_parent(self, parent):
+        """Center dialog on parent window."""
+        self.update_idletasks()
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+        parent_w = parent.winfo_width()
+        parent_h = parent.winfo_height()
+        dialog_w = self.winfo_width()
+        dialog_h = self.winfo_height()
+        x = parent_x + (parent_w - dialog_w) // 2
+        y = parent_y + (parent_h - dialog_h) // 2
+        self.geometry(f"+{x}+{y}")
+
+    def _on_choice(self, choice: str):
+        """Handle option selection."""
+        self.result = choice
+        self.apply_to_all = self.apply_all_var.get()
+        self.destroy()
+
+    def _on_cancel(self):
+        """Handle cancel/skip."""
+        self.result = "cancel"
+        self.apply_to_all = self.apply_all_var.get()
+        self.destroy()
+
+    def get_result(self) -> Tuple[Optional[str], bool]:
+        """Wait and return result.
+
+        Returns:
+            Tuple of (choice, apply_to_all)
+            choice is one of: "resize", "format", "keep", "cancel", None
+        """
+        self.wait_window()
+        return self.result, self.apply_to_all
+
+
+def ask_compression_fallback(
+    parent,
+    filename: str,
+    current_size_mb: float,
+    target_size_mb: float,
+    current_dimensions: Tuple[int, int],
+    suggested_dimensions: Optional[Tuple[int, int]] = None,
+    suggested_format: Optional[str] = None,
+    suggested_format_size_mb: Optional[float] = None,
+) -> Tuple[Optional[str], bool]:
+    """Show enhanced compression fallback dialog with format suggestions.
+
+    Args:
+        parent: Parent window
+        filename: Name of the image file
+        current_size_mb: Achieved size at minimum quality
+        target_size_mb: Target size
+        current_dimensions: Current image dimensions
+        suggested_dimensions: Dimensions that would achieve target
+        suggested_format: Alternative format that could achieve target
+        suggested_format_size_mb: Estimated size with suggested format
+
+    Returns:
+        Tuple of (choice, apply_to_all)
+        choice is one of:
+        - "resize": Apply suggested dimensions
+        - "format": Try suggested format
+        - "keep": Save as-is
+        - "cancel": Skip this image
+        - None: Dialog closed
+    """
+    dialog = CTkCompressionFallbackDialog(
+        parent,
+        filename,
+        current_size_mb,
+        target_size_mb,
+        current_dimensions,
+        suggested_dimensions,
+        suggested_format,
+        suggested_format_size_mb,
+    )
+    return dialog.get_result()

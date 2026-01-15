@@ -1,41 +1,63 @@
 """Batch image processing and queue management"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Tuple, List, Callable
+from typing import Optional, Tuple, List, Callable, Dict, Any
 from PIL import Image
 
-from .crop import crop_image, resize_image, add_padding, save_image
+from .crop import crop_image, resize_image, add_padding
+from .compression import (
+    CompressionEngine,
+    CompressionResult,
+    QuickStrategy,
+    AdvancedStrategy,
+    get_encoder,
+    get_available_formats,
+)
+from .compression.result import EncoderOptions
 
 
 @dataclass
 class ImageTask:
-    """Represents a single image processing task"""
+    """Represents a single image processing task.
+
+    Supports both the new compression system and legacy options for
+    backward compatibility.
+    """
     filepath: Path
     crop_rect: Optional[Tuple[int, int, int, int]] = None  # (x1, y1, x2, y2)
     target_size: Optional[Tuple[int, int]] = None  # (width, height)
     format: str = 'JPEG'
     quality: int = 95
     padding: int = 0
+
+    # New compression mode
+    compression_mode: str = 'advanced'  # 'quick' or 'advanced'
     target_file_size_mb: Optional[float] = None  # Target file size in MB
-    enable_size_compression: bool = False  # Enable file size compression
+
     # Advanced compression options
-    min_compression_quality: int = 75  # Minimum quality floor for compression
+    min_compression_quality: int = 60  # Minimum quality floor for compression
     progressive_jpeg: bool = False  # Enable progressive JPEG encoding
     chroma_subsampling: int = 2  # 0=4:4:4, 1=4:2:2, 2=4:2:0
-    use_mozjpeg: bool = False  # Apply MozJPEG lossless optimization
-    ssim_threshold: Optional[float] = None  # SSIM quality validation threshold
+    use_mozjpeg: bool = True  # Apply MozJPEG lossless optimization
+    calculate_ssim: bool = False  # Calculate SSIM score
+
+    # Legacy compatibility
+    enable_size_compression: bool = False  # Deprecated: use target_file_size_mb
+    ssim_threshold: Optional[float] = None  # Deprecated: use calculate_ssim
 
     def __post_init__(self):
-        """Validate task parameters"""
+        """Validate task parameters."""
         if not isinstance(self.filepath, Path):
             self.filepath = Path(self.filepath)
 
         if not self.filepath.exists():
             raise ValueError(f"Image file not found: {self.filepath}")
 
-        if self.format not in ('JPEG', 'PNG', 'WEBP'):
-            raise ValueError(f"Unsupported format: {self.format}")
+        # Support AVIF if available
+        available = get_available_formats()
+        if self.format not in available:
+            raise ValueError(f"Unsupported format: {self.format}. Available: {available}")
 
         if not 1 <= self.quality <= 100:
             raise ValueError(f"Quality must be 1-100, got {self.quality}")
@@ -48,6 +70,39 @@ class ImageTask:
 
         if self.chroma_subsampling not in (0, 1, 2):
             raise ValueError(f"chroma_subsampling must be 0, 1, or 2, got {self.chroma_subsampling}")
+
+        # Handle legacy enable_size_compression flag
+        if self.enable_size_compression and self.target_file_size_mb is None:
+            self.target_file_size_mb = 5.0  # Default target
+
+    def get_compression_strategy(self):
+        """Get the appropriate compression strategy for this task.
+
+        Returns:
+            CompressionStrategy instance or None if no compression
+        """
+        if self.target_file_size_mb is None:
+            return None
+
+        if self.compression_mode == 'quick':
+            return QuickStrategy(
+                target_mb=self.target_file_size_mb,
+                auto_format=self.format == 'AUTO',
+                preferred_format=self.format,
+                min_quality=self.min_compression_quality,
+                calculate_ssim=self.calculate_ssim,
+            )
+        else:
+            return AdvancedStrategy(
+                format=self.format,
+                quality=self.quality,
+                target_mb=self.target_file_size_mb,
+                min_quality=self.min_compression_quality,
+                chroma_subsampling=self.chroma_subsampling,
+                progressive=self.progressive_jpeg,
+                use_mozjpeg=self.use_mozjpeg,
+                calculate_ssim=self.calculate_ssim,
+            )
 
 
 class ImageProcessor:
@@ -90,6 +145,7 @@ class ImageProcessor:
             'JPEG': '.jpg',
             'PNG': '.png',
             'WEBP': '.webp',
+            'AVIF': '.avif',
         }
         return ext_map.get(format, '.jpg')
 
@@ -256,24 +312,11 @@ class ImageProcessor:
                         overwrite=overwrite
                     )
 
-                    # Save with optional file size compression
-                    compression_target = task.target_file_size_mb if task.enable_size_compression else None
-                    # Only use source file size optimization if no crop was applied
-                    # (cropped images need their actual size checked, not original)
-                    source_for_compression = task.filepath if not task.crop_rect else None
-                    # Keep original for SSIM comparison if threshold is set
-                    original_for_ssim = image.copy() if task.ssim_threshold else None
-                    save_image(
-                        image, output_path, task.format, task.quality,
-                        compression_target, source_filepath=source_for_compression,
-                        min_quality=task.min_compression_quality,
-                        progressive=task.progressive_jpeg,
-                        subsampling=task.chroma_subsampling,
-                        use_mozjpeg=task.use_mozjpeg,
-                        ssim_threshold=task.ssim_threshold,
-                        original_for_ssim=original_for_ssim
-                    )
-                    output_files.append(output_path)
+                    # Use new compression system
+                    was_cropped = task.crop_rect is not None
+                    result = self._compress_and_save(image, task, output_path, was_cropped)
+                    if result:
+                        output_files.append(output_path)
 
                 # Update progress
                 if progress_callback:
@@ -329,23 +372,124 @@ class ImageProcessor:
                 if task.padding > 0:
                     image = add_padding(image, task.padding)
 
-                # Save with optional file size compression
-                compression_target = task.target_file_size_mb if task.enable_size_compression else None
-                # Only use source file size optimization if no crop was applied
-                source_for_compression = task.filepath if not task.crop_rect else None
-                # Keep original for SSIM comparison if threshold is set
-                original_for_ssim = image.copy() if task.ssim_threshold else None
-                save_image(
-                    image, output_path, task.format, task.quality,
-                    compression_target, source_filepath=source_for_compression,
-                    min_quality=task.min_compression_quality,
+                # Use new compression system
+                was_cropped = task.crop_rect is not None
+                return self._compress_and_save(image, task, output_path, was_cropped)
+
+        except Exception:
+            return False
+
+    def _compress_and_save(
+        self,
+        image: Image.Image,
+        task: ImageTask,
+        output_path: Path,
+        was_cropped: bool = False
+    ) -> bool:
+        """Compress and save image using the new compression system.
+
+        Args:
+            image: PIL Image to save
+            task: ImageTask with compression settings
+            output_path: Path to save to
+            was_cropped: Whether the image was cropped (affects skip logic)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            strategy = task.get_compression_strategy()
+            source_file_size = task.filepath.stat().st_size
+
+            # Check if we should skip compression (source already under target)
+            if strategy is not None and task.target_file_size_mb is not None:
+                target_bytes = int(task.target_file_size_mb * 1024 * 1024)
+
+                # If source is under target and not cropped, copy original file
+                if source_file_size <= target_bytes and not was_cropped:
+                    import shutil
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(task.filepath, output_path)
+                    return True
+
+            if strategy is not None:
+                # Use compression strategy
+                result = strategy.compress(image)
+
+                # Safety check: if compression made file larger than source
+                # and source was under target, use original
+                if task.target_file_size_mb is not None:
+                    target_bytes = int(task.target_file_size_mb * 1024 * 1024)
+                    if (result.final_size_bytes > source_file_size and
+                            source_file_size <= target_bytes and
+                            not was_cropped):
+                        import shutil
+                        output_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(task.filepath, output_path)
+                        return True
+
+                # Write encoded bytes to file
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(output_path, 'wb') as f:
+                    f.write(result.encoded_bytes)
+                return True
+            else:
+                # No compression target - save at specified quality
+                encoder = get_encoder(task.format)
+                if encoder is None:
+                    return False
+
+                options = EncoderOptions(
+                    quality=task.quality,
+                    chroma_subsampling=task.chroma_subsampling,
                     progressive=task.progressive_jpeg,
-                    subsampling=task.chroma_subsampling,
                     use_mozjpeg=task.use_mozjpeg,
-                    ssim_threshold=task.ssim_threshold,
-                    original_for_ssim=original_for_ssim
                 )
+                encoded_bytes = encoder.encode(image, options)
+
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(output_path, 'wb') as f:
+                    f.write(encoded_bytes)
                 return True
 
         except Exception:
             return False
+
+    def compress_preview(
+        self,
+        image: Image.Image,
+        task: ImageTask,
+    ) -> Optional[CompressionResult]:
+        """Generate compression preview without saving.
+
+        Args:
+            image: PIL Image to compress
+            task: ImageTask with compression settings
+
+        Returns:
+            CompressionResult with preview data or None on error
+        """
+        try:
+            strategy = task.get_compression_strategy()
+
+            if strategy is not None:
+                return strategy.compress(image)
+            else:
+                # No compression target - just encode at quality
+                encoder = get_encoder(task.format)
+                if encoder is None:
+                    return None
+
+                engine = CompressionEngine(encoder)
+                options = EncoderOptions(
+                    quality=task.quality,
+                    chroma_subsampling=task.chroma_subsampling,
+                    progressive=task.progressive_jpeg,
+                    use_mozjpeg=task.use_mozjpeg,
+                )
+                return engine.compress_at_quality(
+                    image, options, calculate_ssim=task.calculate_ssim
+                )
+
+        except Exception:
+            return None

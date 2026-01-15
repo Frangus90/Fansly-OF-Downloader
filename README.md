@@ -150,13 +150,18 @@ The built-in Image Crop Tool allows you to batch process and crop downloaded ima
 - **SSIM Score** - Color-coded quality indicator (green = excellent, yellow = good, red = poor)
 - **Smart Format Detection** - Warns when PNG is selected (lossless, no quality difference to compare)
 
+**Compression Modes:**
+- **Quick Mode** - Set target file size, auto-selects best format (JPEG > WebP > AVIF)
+- **Advanced Mode** - Full manual control with detailed settings
+
 **Advanced Compression Options:**
-- **Target File Size** - Compress images to a specific file size (e.g., 5 MB) while maximizing quality
-- **MozJPEG Optimization** - 10-15% smaller files at the same visual quality
-- **SSIM Quality Validation** - Warns when compression reduces perceptual quality below your threshold
-- **Chroma Subsampling** - Choose between best quality (4:4:4), balanced (4:2:2), or smallest size (4:2:0)
-- **Minimum Quality Floor** - Prevent over-compression by setting a quality floor (60-90)
-- **Progressive JPEG** - Better loading experience for web use
+- **Target File Size** - Compress to specific size (e.g., 5 MB) while maximizing quality
+- **MozJPEG Optimization** - 10-15% smaller files at same visual quality
+- **SSIM Quality Validation** - Warns when compression reduces perceptual quality below threshold
+- **Chroma Subsampling** - Choose quality (4:4:4), balanced (4:2:2), or smallest (4:2:0)
+- **Minimum Quality Floor** - Prevent over-compression by setting quality floor (60-90)
+- **Progressive JPEG** - Better loading experience for web
+- **AVIF Support** - Next-gen format for superior compression (optional)
 
 **Usage:**
 1. Open Tools → Image Crop Tool from the main menu

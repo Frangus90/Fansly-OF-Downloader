@@ -854,34 +854,77 @@ class ImageCropWindow(ctk.CTkToplevel):
                 return
 
             # Load and process image
-            from imageprocessing.crop import _encode_at_quality, crop_image
+            from imageprocessing.crop import crop_image
+            from imageprocessing.compression import (
+                QuickStrategy, AdvancedStrategy, get_encoder, CompressionEngine
+            )
+            from imageprocessing.compression.result import EncoderOptions
 
             img = Image.open(filepath)
+            source_file_size = filepath.stat().st_size
+
+            # Check if cropping will be applied
+            is_cropping = crop_coords and crop_coords != (0, 0, img.width, img.height)
 
             # Apply crop if exists
-            if crop_coords and crop_coords != (0, 0, img.width, img.height):
+            if is_cropping:
                 img = crop_image(img, *crop_coords)
 
             if cancel_event.is_set():
                 img.close()
                 return
 
-            # Get encoding settings
-            format_val = settings['format']
-            quality = settings['quality']
-            progressive = settings.get('progressive', False)
-            chroma = settings.get('chroma_subsampling', 2)
-            use_mozjpeg = settings.get('use_mozjpeg', False)
+            # Use new compression system
+            mode = settings.get('mode', 'advanced')
+            target_mb = settings.get('target_mb')
+            format_val = settings.get('format', 'JPEG')
 
-            # Encode and get size
-            _, size_bytes = _encode_at_quality(
-                img,
-                format_val,
-                quality,
-                progressive,
-                chroma,
-                use_mozjpeg
-            )
+            # Check if compression will be skipped (source under target, not cropping)
+            if mode == 'quick' and target_mb is not None:
+                target_bytes = int(target_mb * 1024 * 1024)
+
+                # If source is under target and not cropping, file will be copied as-is
+                if source_file_size <= target_bytes and not is_cropping:
+                    img.close()
+                    if cancel_event.is_set():
+                        return
+                    # Show original file size (will be copied as-is)
+                    self.after(0, self.settings_panel.update_estimated_file_size, source_file_size, False)
+                    return
+
+                # Quick mode - use strategy
+                strategy = QuickStrategy(
+                    target_mb=target_mb,
+                    auto_format=format_val == 'AUTO',
+                    preferred_format=format_val,
+                    min_quality=settings.get('min_quality', 60),
+                    calculate_ssim=False,
+                )
+                result = strategy.compress(img)
+                size_bytes = result.final_size_bytes
+
+                # If compression made it larger than source AND source was under target
+                # show source size (will be copied as-is)
+                if size_bytes > source_file_size and source_file_size <= target_bytes and not is_cropping:
+                    size_bytes = source_file_size
+            else:
+                # Advanced mode - encode at quality
+                quality = settings.get('quality', 85)
+                # Handle AUTO format for advanced mode
+                if format_val == 'AUTO':
+                    format_val = 'JPEG'
+                encoder = get_encoder(format_val)
+                if encoder:
+                    options = EncoderOptions(
+                        quality=quality,
+                        chroma_subsampling=settings.get('chroma_subsampling', 2),
+                        progressive=settings.get('progressive', False),
+                        use_mozjpeg=settings.get('use_mozjpeg', False),
+                    )
+                    encoded = encoder.encode(img, options)
+                    size_bytes = len(encoded)
+                else:
+                    size_bytes = None
 
             img.close()
 
@@ -923,8 +966,11 @@ class ImageCropWindow(ctk.CTkToplevel):
     def _generate_comparison_thread(self):
         """Background worker: encode both versions and calculate SSIM"""
         try:
-            from imageprocessing.crop import _encode_at_quality, crop_image
-            from imageprocessing.encoders import calculate_ssim, SSIM_AVAILABLE
+            from imageprocessing.crop import crop_image
+            from imageprocessing.compression import (
+                QuickStrategy, get_encoder, calculate_ssim_inmemory, SSIM_AVAILABLE
+            )
+            from imageprocessing.compression.result import EncoderOptions
             from io import BytesIO
 
             # Get current image
@@ -942,24 +988,53 @@ class ImageCropWindow(ctk.CTkToplevel):
             original_img = img.copy()
 
             # Get settings
-            format_val = settings['format']
-            quality = settings['quality']
-            progressive = settings.get('progressive', False)
-            chroma = settings.get('chroma_subsampling', 2)
-            use_mozjpeg = settings.get('use_mozjpeg', False)
+            mode = settings.get('mode', 'advanced')
+            target_mb = settings.get('target_mb')
+            format_val = settings.get('format', 'JPEG')
+            quality = settings.get('quality', 85)
+
+            # Determine actual format for encoding
+            if format_val == 'AUTO':
+                actual_format = 'JPEG'  # Default for original comparison
+            else:
+                actual_format = format_val
 
             # Check if format is lossless
-            is_lossless = format_val == 'PNG'
+            is_lossless = actual_format == 'PNG'
 
             # Encode original at quality 100
-            original_bytes, original_size = _encode_at_quality(
-                img, format_val, 100, False, 0, False
-            )
+            encoder = get_encoder(actual_format)
+            if not encoder:
+                raise ValueError(f"No encoder for format: {actual_format}")
+
+            original_options = EncoderOptions(quality=100)
+            original_bytes = encoder.encode(img, original_options)
+            original_size = len(original_bytes)
 
             # Encode compressed with current settings
-            compressed_bytes, compressed_size = _encode_at_quality(
-                img, format_val, quality, progressive, chroma, use_mozjpeg
-            )
+            if mode == 'quick' and target_mb is not None:
+                # Quick mode - use strategy to compress
+                strategy = QuickStrategy(
+                    target_mb=target_mb,
+                    auto_format=format_val == 'AUTO',
+                    preferred_format=format_val,
+                    min_quality=settings.get('min_quality', 60),
+                    calculate_ssim=False,
+                )
+                result = strategy.compress(img)
+                compressed_bytes = result.encoded_bytes
+                compressed_size = result.final_size_bytes
+                actual_format = result.format_used
+            else:
+                # Advanced mode - encode at quality
+                options = EncoderOptions(
+                    quality=quality,
+                    chroma_subsampling=settings.get('chroma_subsampling', 2),
+                    progressive=settings.get('progressive', False),
+                    use_mozjpeg=settings.get('use_mozjpeg', False),
+                )
+                compressed_bytes = encoder.encode(img, options)
+                compressed_size = len(compressed_bytes)
 
             img.close()
 
@@ -970,7 +1045,7 @@ class ImageCropWindow(ctk.CTkToplevel):
             ssim_score = None
             if SSIM_AVAILABLE:
                 try:
-                    ssim_score = calculate_ssim(original_img, compressed_img)
+                    ssim_score = calculate_ssim_inmemory(original_img, compressed_img)
                 except Exception:
                     pass
 
