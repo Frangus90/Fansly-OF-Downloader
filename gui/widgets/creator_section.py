@@ -91,6 +91,13 @@ class CreatorSection(ctk.CTkFrame):
         # Configure grid weights
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(3, weight=1)  # Make scroll frame expandable
+        
+        # Debouncing for save operations
+        self._save_timer_id = None
+        
+        # Batched widget creation state
+        self._widget_creation_queue = None
+        self._selected_set = None
 
         # Load from config
         self.load_from_config()
@@ -120,8 +127,8 @@ class CreatorSection(ctk.CTkFrame):
         # Update info
         self.update_info_label()
 
-        # Save immediately to gui_state.json
-        self._sync_and_save()
+        # Save immediately for explicit add action
+        self._sync_and_save(immediate=True)
 
     def create_creator_row(self, username, checked=False):
         """Create a single row with checkbox, label, and remove button"""
@@ -173,8 +180,8 @@ class CreatorSection(ctk.CTkFrame):
         # Update info
         self.update_info_label()
 
-        # Save immediately to gui_state.json
-        self._sync_and_save()
+        # Save immediately for explicit remove action
+        self._sync_and_save(immediate=True)
 
     def select_all(self):
         """Select all creators"""
@@ -214,14 +221,14 @@ class CreatorSection(ctk.CTkFrame):
             text_color="green"
         )
 
-        # Save changes
-        self._sync_and_save()
+        # Save changes (already saved by remove_creator_by_name, but ensure final state is saved)
+        self._sync_and_save(immediate=True)
 
     def on_selection_changed(self):
         """Called when any checkbox changes"""
         self.update_info_label()
 
-        # Save immediately to gui_state.json
+        # Save to gui_state.json (debounced)
         self._sync_and_save()
 
     def update_info_label(self):
@@ -247,13 +254,36 @@ class CreatorSection(ctk.CTkFrame):
                 selected.append(username)
         return selected
 
-    def _sync_and_save(self):
-        """Sync current widget state to AppState and save to JSON immediately"""
+    def _sync_and_save(self, immediate=False):
+        """Sync current widget state to AppState and save to JSON
+        
+        Args:
+            immediate: If True, save immediately. If False, debounce (default).
+        """
+        if immediate:
+            # Cancel any pending save
+            if self._save_timer_id is not None:
+                self.after_cancel(self._save_timer_id)
+                self._save_timer_id = None
+            
+            # Save immediately
+            self._do_save()
+        else:
+            # Debounce: cancel previous timer and schedule new one
+            if self._save_timer_id is not None:
+                self.after_cancel(self._save_timer_id)
+            
+            # Schedule save after 500ms delay
+            self._save_timer_id = self.after(500, self._do_save)
+    
+    def _do_save(self):
+        """Actually perform the save operation"""
+        self._save_timer_id = None
         # Update AppState with current widget state
         self.app_state.all_creators = self.creators.copy()
         self.app_state.selected_creators = set(self.get_selected_creators())
 
-        # Save to JSON file immediately
+        # Save to JSON file
         self.app_state.save_gui_state()
 
     def load_from_config(self):
@@ -275,12 +305,41 @@ class CreatorSection(ctk.CTkFrame):
             else:
                 return  # No creators to load
 
-        # Create rows
-        for username in self.creators:
-            checked = username in selected
-            self.create_creator_row(username, checked=checked)
+        # Batch creation for large lists to avoid blocking UI
+        if len(self.creators) > 20:
+            self._batch_create_widgets(self.creators, selected)
+        else:
+            # Small list - create immediately
+            for username in self.creators:
+                checked = username in selected
+                self.create_creator_row(username, checked=checked)
+            self.update_info_label()
 
-        self.update_info_label()
+    def _batch_create_widgets(self, creators, selected):
+        """Create widgets in batches to avoid blocking UI"""
+        self._widget_creation_queue = list(creators)
+        self._selected_set = selected
+        self._create_next_batch()
+
+    def _create_next_batch(self, batch_size=10):
+        """Create next batch of widgets"""
+        for _ in range(batch_size):
+            if not self._widget_creation_queue:
+                self.update_info_label()
+                self._widget_creation_queue = None
+                self._selected_set = None
+                return
+            username = self._widget_creation_queue.pop(0)
+            checked = username in self._selected_set
+            self.create_creator_row(username, checked=checked)
+        
+        # Schedule next batch
+        if self._widget_creation_queue:
+            self.after(10, lambda: self._create_next_batch(batch_size))
+        else:
+            self.update_info_label()
+            self._widget_creation_queue = None
+            self._selected_set = None
 
     def save_to_config(self, config):
         """Save values to AppState and GUI state file"""

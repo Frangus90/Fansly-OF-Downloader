@@ -43,6 +43,11 @@ class DownloadManager:
         self.thread: Optional[threading.Thread] = None
         self.stop_flag = threading.Event()
         self.is_running = False
+        
+        # Progress throttling
+        self._last_progress_time = 0.0
+        self._pending_progress: Optional[ProgressUpdate] = None
+        self._progress_throttle_ms = 100  # Max 10 updates/sec
 
     def start(self, config):
         """Start download in background thread"""
@@ -114,15 +119,12 @@ class DownloadManager:
             )
 
         finally:
+            # Flush any pending progress before finishing
+            self._flush_pending_progress()
             self.is_running = False
 
     def _handle_progress(self, data: dict):
         """Convert dict to ProgressUpdate and send to callback"""
-        # Debug: Log progress received
-        self.log_callback(
-            f"[Progress] type={data.get('type')} current={data.get('current')}/{data.get('total')} file={data.get('current_file', '')[:30]}",
-            "debug"
-        )
         update = ProgressUpdate(
             type=data.get("type", "unknown"),
             current=data.get("current", 0),
@@ -141,16 +143,35 @@ class DownloadManager:
         self.log_callback(message, level)
 
     def _send_progress(self, update: ProgressUpdate):
-        """Send progress update to callback"""
-        try:
-            self.progress_callback(update)
-        except Exception as ex:
-            # Log error using log callback if available, otherwise fallback to print
+        """Send progress update to callback with throttling"""
+        # Always store latest update
+        self._pending_progress = update
+        
+        # Throttle: only send if enough time has passed or if it's a completion/error
+        current_time = time.time() * 1000
+        is_important = update.status in ("complete", "error", "stopped")
+        
+        if is_important or (current_time - self._last_progress_time >= self._progress_throttle_ms):
+            self._last_progress_time = current_time
             try:
-                self.log_callback(f"Progress callback error: {ex}", "error")
+                self.progress_callback(self._pending_progress)
+                self._pending_progress = None
+            except Exception as ex:
+                # Log error using log callback if available, otherwise fallback to print
+                try:
+                    self.log_callback(f"Progress callback error: {ex}", "error")
+                except Exception:
+                    # Fallback if log callback also fails
+                    print(f"Progress callback error: {ex}")
+    
+    def _flush_pending_progress(self):
+        """Flush any pending progress update (called on completion/error)"""
+        if self._pending_progress is not None:
+            try:
+                self.progress_callback(self._pending_progress)
+                self._pending_progress = None
             except Exception:
-                # Fallback if log callback also fails
-                print(f"Progress callback error: {ex}")
+                pass
 
 
 class OnlyFansDownloadManager:
@@ -167,6 +188,11 @@ class OnlyFansDownloadManager:
         self.thread: Optional[threading.Thread] = None
         self.stop_flag = threading.Event()
         self.is_running = False
+        
+        # Progress throttling
+        self._last_progress_time = 0.0
+        self._pending_progress: Optional[ProgressUpdate] = None
+        self._progress_throttle_ms = 100  # Max 10 updates/sec
 
     def start(self, config):
         """Start OF download in background thread"""
@@ -224,15 +250,12 @@ class OnlyFansDownloadManager:
             )
 
         finally:
+            # Flush any pending progress before finishing
+            self._flush_pending_progress()
             self.is_running = False
 
     def _handle_progress(self, data: dict):
         """Convert dict to ProgressUpdate"""
-        # Debug: Log progress received
-        self.log_callback(
-            f"[OF Progress] type={data.get('type')} current={data.get('current')}/{data.get('total')} file={data.get('current_file', '')[:30]}",
-            "debug"
-        )
         update = ProgressUpdate(
             type=data.get("type", "unknown"),
             current=data.get("current", 0),
@@ -251,11 +274,30 @@ class OnlyFansDownloadManager:
         self.log_callback(message, level)
 
     def _send_progress(self, update: ProgressUpdate):
-        """Send progress update to callback"""
-        try:
-            self.progress_callback(update)
-        except Exception as ex:
+        """Send progress update to callback with throttling"""
+        # Always store latest update
+        self._pending_progress = update
+        
+        # Throttle: only send if enough time has passed or if it's a completion/error
+        current_time = time.time() * 1000
+        is_important = update.status in ("complete", "error", "stopped")
+        
+        if is_important or (current_time - self._last_progress_time >= self._progress_throttle_ms):
+            self._last_progress_time = current_time
             try:
-                self.log_callback(f"OF Progress callback error: {ex}", "error")
+                self.progress_callback(self._pending_progress)
+                self._pending_progress = None
+            except Exception as ex:
+                try:
+                    self.log_callback(f"OF Progress callback error: {ex}", "error")
+                except Exception:
+                    print(f"Progress callback error: {ex}")
+    
+    def _flush_pending_progress(self):
+        """Flush any pending progress update (called on completion/error)"""
+        if self._pending_progress is not None:
+            try:
+                self.progress_callback(self._pending_progress)
+                self._pending_progress = None
             except Exception:
-                print(f"Progress callback error: {ex}")
+                pass

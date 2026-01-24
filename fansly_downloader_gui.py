@@ -14,7 +14,7 @@ from gui.app import create_app
 
 # BUILD VERIFICATION - Updated each time we rebuild
 # This helps confirm we're running the latest build
-BUILD_TIMESTAMP = "v1.5.0_2026-01-03_2339"
+BUILD_TIMESTAMP = "v1.7.0_2026-01-24_2132"
 
 
 def main():
@@ -26,48 +26,9 @@ def main():
         from gui.stream_redirector import setup_stream_redirection
         setup_stream_redirection()
 
-        # === DIAGNOSTIC STARTUP LOGGING ===
-        from pathlib import Path
-        from gui.logger import log, log_separator
-
-        log_separator()
-        log("FANSLY DOWNLOADER NG - STARTUP DIAGNOSTICS")
-        log_separator()
-        log("stdout/stderr redirection: ACTIVE")
-        log(f"Build Version: {BUILD_TIMESTAMP}")
-        log(f"Working Directory: {Path.cwd()}")
-        log(f"Script Directory: {Path(__file__).parent.absolute()}")
-        log(f"Executable: {sys.executable}")
-
-        # Check if running from PyInstaller bundle
-        if getattr(sys, 'frozen', False):
-            log(f"Running as: FROZEN EXECUTABLE (PyInstaller)")
-            log(f"Bundle Dir: {sys._MEIPASS}")
-        else:
-            log(f"Running as: PYTHON SCRIPT")
-
-        # Check config file location
-        config_path = Path.cwd() / "config.ini"
-        log(f"")
-        log(f"Config file path: {config_path}")
-        log(f"Config exists: {config_path.exists()}")
-
-        if config_path.exists():
-            log(f"Config size: {config_path.stat().st_size} bytes")
-            log(f"Config modified: {config_path.stat().st_mtime}")
-
-        # List files in current directory
-        log(f"")
-        log(f"Files in working directory:")
-        try:
-            items = sorted(Path.cwd().iterdir())[:10]  # Show first 10
-            for item in items:
-                log(f"  - {item.name}")
-        except Exception as e:
-            log(f"  Error listing files: {e}")
-
-        log_separator()
-        # === END DIAGNOSTICS ===
+        # Minimal startup logging
+        from gui.logger import log
+        log(f"Starting Fansly Downloader NG {BUILD_TIMESTAMP}")
 
         app = create_app()
         app.run()

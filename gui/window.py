@@ -130,7 +130,42 @@ class MainWindow(ctk.CTk):
             check_update_callback=self._on_check_update_clicked
         )
 
-        # Build OnlyFans UI in second tab
+        # Connect handlers to UI
+        self.handlers.set_sections(self.sections)
+
+        # OnlyFans tab will be built lazily on first access
+        self.of_app_state = None
+        self.of_handlers = None
+        self.of_sections = None
+
+        # Log window will be created lazily on first show
+        self.log_window = None
+
+        # Window events
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        # Add keyboard shortcut for log window toggle (Ctrl+L)
+        self.bind("<Control-l>", lambda e: self.toggle_log_window())
+
+        # Add tab change handler for lazy loading OnlyFans tab
+        self.tab_view.configure(command=self._on_tab_changed)
+
+        if wizard_was_completed:
+            log("App initialization complete after wizard")
+
+        # Schedule auto-update check (5 second delay for app to settle)
+        if self.app_state.config.auto_check_updates:
+            self.after(5000, self._check_for_updates_on_startup)
+
+    def _on_tab_changed(self):
+        """Handle tab switching - lazy load OnlyFans tab on first access"""
+        current = self.tab_view.get()
+        if current == "OnlyFans" and self.of_sections is None:
+            # First time switching to OnlyFans - build it now
+            self._build_onlyfans_tab()
+
+    def _build_onlyfans_tab(self):
+        """Build OnlyFans tab UI (called on first access)"""
         from gui.tabs.onlyfans_tab import build_onlyfans_layout
         from gui.state import OnlyFansAppState
 
@@ -145,47 +180,53 @@ class MainWindow(ctk.CTk):
             check_update_callback=self._on_check_update_clicked
         )
         self.of_handlers.set_sections(self.of_sections)
-
-        # Connect handlers to UI
-        self.handlers.set_sections(self.sections)
-
-        # Create shared log window for both tabs
-        from gui.widgets.log_window import LogWindow
-        self.log_window = LogWindow(self)
-        self.sections["log"] = self.log_window     # Fansly tab
-        self.of_sections["log"] = self.log_window  # OnlyFans tab (shared)
-
-        # Window events
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
-
-        # Add keyboard shortcut for log window toggle (Ctrl+L)
-        self.bind("<Control-l>", lambda e: self.toggle_log_window())
-
-        if wizard_was_completed:
-            log("App initialization complete after wizard")
-
-        # Schedule auto-update check (2 second delay for app to settle)
-        if self.app_state.config.auto_check_updates:
-            self.after(2000, self._check_for_updates_on_startup)
+        
+        # Connect log window if it already exists
+        if self.log_window is not None:
+            self.of_sections["log"] = self.log_window
 
     def on_close(self):
         """Handle window close event"""
+        # Check if downloads are running and get user confirmation
+        can_close = True
+        if self.handlers.download_manager.is_running:
+            can_close = self.handlers.on_close()
+            if not can_close:
+                return  # User cancelled
+        
+        if self.of_handlers is not None and self.of_handlers.download_manager.is_running:
+            can_close = self.of_handlers.on_close()
+            if not can_close:
+                return  # User cancelled
+        
         # Save log window state
-        if hasattr(self, 'log_window'):
+        if self.log_window is not None:
             self.log_window._save_window_state()
 
         # Save GUI state before closing
         self.app_state.save_gui_state()
-        # Handle download stop if needed
-        self.handlers.on_close()
+        if self.of_app_state is not None:
+            self.of_app_state.save_gui_state()
+        
+        # Destroy window
+        self.destroy()
 
     def toggle_log_window(self):
         """Toggle log window visibility"""
+        # Create log window on first show
+        if self.log_window is None:
+            from gui.widgets.log_window import LogWindow
+            self.log_window = LogWindow(self)
+            self.sections["log"] = self.log_window
+            # OnlyFans tab might not be built yet, handle that in _build_onlyfans_tab
+        
         if self.log_window.winfo_viewable():
             self.log_window.withdraw()
-            # Update both tab buttons
-            self.sections["status"]["log_button"].configure(text="Show Log")
-            self.of_sections["status"]["log_button"].configure(text="Show Log")
+            # Update both tab buttons (if they exist)
+            if "status" in self.sections and "log_button" in self.sections["status"]:
+                self.sections["status"]["log_button"].configure(text="Show Log")
+            if hasattr(self, 'of_sections') and "status" in self.of_sections and "log_button" in self.of_sections["status"]:
+                self.of_sections["status"]["log_button"].configure(text="Show Log")
         else:
             self.log_window.deiconify()
             self.log_window.lift()
@@ -195,13 +236,16 @@ class MainWindow(ctk.CTk):
             self.handlers.unread_errors = 0
             self.handlers._update_log_button_badge()
 
-            self.of_handlers.unread_warnings = 0
-            self.of_handlers.unread_errors = 0
-            self.of_handlers._update_log_button_badge()
+            if hasattr(self, 'of_handlers'):
+                self.of_handlers.unread_warnings = 0
+                self.of_handlers.unread_errors = 0
+                self.of_handlers._update_log_button_badge()
 
-            # Update both tab buttons
-            self.sections["status"]["log_button"].configure(text="Hide Log")
-            self.of_sections["status"]["log_button"].configure(text="Hide Log")
+            # Update both tab buttons (if they exist)
+            if "status" in self.sections and "log_button" in self.sections["status"]:
+                self.sections["status"]["log_button"].configure(text="Hide Log")
+            if hasattr(self, 'of_sections') and "status" in self.of_sections and "log_button" in self.of_sections["status"]:
+                self.of_sections["status"]["log_button"].configure(text="Hide Log")
 
     def open_log_file(self):
         """Open log file in default text editor"""
@@ -326,7 +370,8 @@ class MainWindow(ctk.CTk):
         else:
             if is_manual:
                 log("Already running the latest version")
-                self.log_window.add_log("You are running the latest version!", "info")
+                if self.log_window is not None:
+                    self.log_window.add_log("You are running the latest version!", "info")
 
     def _reset_update_buttons(self):
         """Reset update buttons to default state"""
@@ -375,7 +420,8 @@ class MainWindow(ctk.CTk):
         # Hide banner
         self._hide_update_banner()
 
-        self.log_window.add_log(f"Version {version} will be skipped", "info")
+        if self.log_window is not None:
+            self.log_window.add_log(f"Version {version} will be skipped", "info")
 
     def _start_update(self):
         """Start downloading and applying the update"""
@@ -440,7 +486,8 @@ class MainWindow(ctk.CTk):
             if self.update_banner and hasattr(self.update_banner, 'set_error'):
                 self.update_banner.set_error("Download failed")
 
-            self.log_window.add_log("Update download failed. Please try again or download manually.", "error")
+            if self.log_window is not None:
+                self.log_window.add_log("Update download failed. Please try again or download manually.", "error")
 
     def _show_restart_dialog(self, downloaded_path: Path):
         """Show restart confirmation dialog"""
@@ -455,7 +502,8 @@ class MainWindow(ctk.CTk):
             self._apply_update_and_restart(downloaded_path)
         else:
             self._hide_update_banner()
-            self.log_window.add_log("Update will be applied next time you start the application", "info")
+            if self.log_window is not None:
+                self.log_window.add_log("Update will be applied next time you start the application", "info")
 
     def _apply_update_and_restart(self, downloaded_path: Path):
         """Apply update and restart the application"""
@@ -465,7 +513,8 @@ class MainWindow(ctk.CTk):
 
         if success:
             # Exit application - update script will restart it
-            self.log_window.add_log("Restarting to apply update...", "info")
+            if self.log_window is not None:
+                self.log_window.add_log("Restarting to apply update...", "info")
             self.after(500, self._force_close)
         else:
             messagebox.showerror(

@@ -6,7 +6,7 @@ Separate main script for OnlyFans scraping.
 Parallel to fansly_downloader_ng.py but for OnlyFans.
 """
 
-__version__ = '1.5.0'
+__version__ = '1.7.0'
 __date__ = '2025-01-13'
 __maintainer__ = 'prof79'
 __copyright__ = f'Copyright (C) 2024-2025 by {__maintainer__}'
@@ -18,7 +18,7 @@ from config.onlyfans_config import (
     load_onlyfans_config,
     validate_onlyfans_config
 )
-from download_of import download_timeline, get_creator_account_info, download_single_post_of
+from download_of import download_timeline, get_creator_account_info, download_single_post_of, download_messages
 from download.downloadstate import DownloadState
 from errors import (
     EXIT_SUCCESS,
@@ -173,12 +173,15 @@ def main(config: OnlyFansConfig) -> int:
                 # Download based on mode
                 if config.download_mode == "Timeline":
                     download_timeline(config, state)
+                elif config.download_mode == "Messages":
+                    download_messages(config, state)
                 elif config.download_mode == "Normal":
-                    # Normal mode: Timeline (+ Messages/Collections in future)
+                    # Normal mode: Timeline + Messages
                     download_timeline(config, state)
+                    download_messages(config, state)
                 else:
                     print_warning(f"Download mode '{config.download_mode}' not yet supported")
-                    print_info("Currently supported: Timeline, Normal")
+                    print_info("Currently supported: Timeline, Messages, Normal")
 
                 # Show stats
                 print()

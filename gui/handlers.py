@@ -25,6 +25,10 @@ class EventHandlers:
         # Badge tracking for log button
         self.unread_warnings = 0
         self.unread_errors = 0
+        
+        # Log message batching
+        self._log_queue = []
+        self._log_flush_scheduled = False
 
     def set_sections(self, sections):
         """Set UI sections after layout is built"""
@@ -127,7 +131,22 @@ class EventHandlers:
         if not hasattr(self, 'sections') or not self.sections:
             return
 
-        def process_log():
+        # Add to queue for batching
+        self._log_queue.append((message, level))
+        
+        # Schedule flush if not already scheduled
+        if not self._log_flush_scheduled:
+            self._log_flush_scheduled = True
+            self.window.after(150, self._flush_log_queue)
+    
+    def _flush_log_queue(self):
+        """Process all queued log messages at once"""
+        if not self._log_queue:
+            self._log_flush_scheduled = False
+            return
+        
+        # Process all queued logs
+        for message, level in self._log_queue:
             # Always send to log window
             if "log" in self.sections:
                 self.sections["log"].add_log(message, level)
@@ -135,20 +154,23 @@ class EventHandlers:
             # Classify message for status display
             category, status_text = self._classify_log_message(message, level)
 
-            # Update status label if critical message
-            if status_text and "status" in self.sections:
+            # Update status label if critical message (only for last message to avoid spam)
+            if status_text and "status" in self.sections and message == self._log_queue[-1][0]:
                 self._update_status_with_context(status_text)
 
             # Update badge for warnings/errors
             if level == "warning":
                 self.unread_warnings += 1
-                self._update_log_button_badge()
             elif level == "error":
                 self.unread_errors += 1
-                self._update_log_button_badge()
-
-        # Schedule on main thread
-        self.window.after(0, process_log)
+        
+        # Update badge once after processing all messages
+        if self.unread_warnings > 0 or self.unread_errors > 0:
+            self._update_log_button_badge()
+        
+        # Clear queue
+        self._log_queue.clear()
+        self._log_flush_scheduled = False
 
     def _classify_log_message(self, message: str, level: str):
         """Classify log message and extract context for status display."""
@@ -175,15 +197,16 @@ class EventHandlers:
         update_log_button_badge(log_button, self.unread_warnings, self.unread_errors, is_visible)
 
     def on_close(self):
-        """Handle window close request"""
+        """Handle window close request - stop downloads if running"""
         if self.download_manager.is_running:
             if messagebox.askyesno(
                 "Confirm Exit", "Download in progress. Stop and exit?"
             ):
                 self.download_manager.stop()
-                self.window.destroy()
-        else:
-            self.window.destroy()
+            else:
+                # User cancelled - don't close
+                return False
+        return True
 
     def on_open_crop_tool(self):
         """Handle opening the image crop tool window (CustomTkinter version)"""
@@ -283,6 +306,10 @@ class OnlyFansEventHandlers:
         # Badge tracking for log button
         self.unread_warnings = 0
         self.unread_errors = 0
+        
+        # Log message batching
+        self._log_queue = []
+        self._log_flush_scheduled = False
 
     def set_sections(self, sections):
         """Set UI sections after layout is built"""
@@ -366,7 +393,22 @@ class OnlyFansEventHandlers:
         if not hasattr(self, 'sections') or not self.sections:
             return
 
-        def process_log():
+        # Add to queue for batching
+        self._log_queue.append((message, level))
+        
+        # Schedule flush if not already scheduled
+        if not self._log_flush_scheduled:
+            self._log_flush_scheduled = True
+            self.window.after(150, self._flush_log_queue)
+    
+    def _flush_log_queue(self):
+        """Process all queued log messages at once"""
+        if not self._log_queue:
+            self._log_flush_scheduled = False
+            return
+        
+        # Process all queued logs
+        for message, level in self._log_queue:
             # Always send to log window
             if "log" in self.sections:
                 self.sections["log"].add_log(message, level)
@@ -374,20 +416,23 @@ class OnlyFansEventHandlers:
             # Classify message for status display
             category, status_text = self._classify_log_message(message, level)
 
-            # Update status label if critical message
-            if status_text and "status" in self.sections:
+            # Update status label if critical message (only for last message to avoid spam)
+            if status_text and "status" in self.sections and message == self._log_queue[-1][0]:
                 self._update_status_with_context(status_text)
 
             # Update badge for warnings/errors
             if level == "warning":
                 self.unread_warnings += 1
-                self._update_log_button_badge()
             elif level == "error":
                 self.unread_errors += 1
-                self._update_log_button_badge()
-
-        # Schedule on main thread
-        self.window.after(0, process_log)
+        
+        # Update badge once after processing all messages
+        if self.unread_warnings > 0 or self.unread_errors > 0:
+            self._update_log_button_badge()
+        
+        # Clear queue
+        self._log_queue.clear()
+        self._log_flush_scheduled = False
 
     def _classify_log_message(self, message: str, level: str):
         """Classify log message and extract context for status display."""
@@ -422,11 +467,16 @@ class OnlyFansEventHandlers:
         crop_window.focus()
 
     def on_close(self):
-        """Handle window close"""
+        """Handle window close request - stop downloads if running"""
         if self.download_manager.is_running:
-            if messagebox.askyesno("Confirm Exit", "OF download in progress. Stop and exit?"):
+            if messagebox.askyesno(
+                "Confirm Exit", "OF download in progress. Stop and exit?"
+            ):
                 self.download_manager.stop()
-        self.window.destroy()
+            else:
+                # User cancelled - don't close
+                return False
+        return True
 
     def import_subscriptions(self) -> dict:
         """

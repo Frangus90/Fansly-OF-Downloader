@@ -72,7 +72,7 @@ def run_onlyfans_download(config, stop_flag, progress_callback, log_callback):
     This function is called in a worker thread for OF downloads.
     """
     # Import OF download modules
-    from download_of import download_timeline, get_creator_account_info, download_single_post_of
+    from download_of import download_timeline, get_creator_account_info, download_single_post_of, download_messages
     from download.downloadstate import DownloadState
     from textio import print_info
 
@@ -106,9 +106,12 @@ def run_onlyfans_download(config, stop_flag, progress_callback, log_callback):
         # Get creator info
         get_creator_account_info(config, state)
 
-        # Download timeline
+        # Download based on mode
         if config.download_mode in ("Timeline", "Normal"):
             print_info("Starting timeline download...")
             download_timeline(config, state)
+        if config.download_mode in ("Messages", "Normal"):
+            print_info("Starting messages download...")
+            download_messages(config, state)
 
     return True

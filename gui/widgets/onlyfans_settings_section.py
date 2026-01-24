@@ -34,6 +34,15 @@ class OnlyFansSettingsSection(ctk.CTkFrame):
 
         self.mode_var = ctk.StringVar(value="Timeline")
 
+        self.normal_radio = ctk.CTkRadioButton(
+            mode_frame,
+            text="Normal",
+            variable=self.mode_var,
+            value="Normal",
+            command=self._on_mode_change
+        )
+        self.normal_radio.pack(side="left", padx=10)
+
         self.timeline_radio = ctk.CTkRadioButton(
             mode_frame,
             text="Timeline",
@@ -42,6 +51,15 @@ class OnlyFansSettingsSection(ctk.CTkFrame):
             command=self._on_mode_change
         )
         self.timeline_radio.pack(side="left", padx=10)
+
+        self.messages_radio = ctk.CTkRadioButton(
+            mode_frame,
+            text="Messages",
+            variable=self.mode_var,
+            value="Messages",
+            command=self._on_mode_change
+        )
+        self.messages_radio.pack(side="left", padx=10)
 
         self.single_radio = ctk.CTkRadioButton(
             mode_frame,

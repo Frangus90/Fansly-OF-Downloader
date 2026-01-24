@@ -239,14 +239,49 @@ class OnlyFansApi:
         response = self._make_request('GET', '/subscriptions/subscribes', params=params)
         return response.json()
 
-    # Future: Messages API
-    def get_chats(self) -> Dict:
-        """Get list of chats (messages) - TODO: Implement"""
-        raise NotImplementedError("Messages support coming in future update")
+    # Messages API
+    def get_chats(self, limit: int = 100, offset: int = 0, order: str = 'recent') -> Dict:
+        """Get list of message conversations
+        
+        Args:
+            limit: Number of chats to fetch
+            offset: Offset for pagination
+            order: Sort order ('recent' or other)
+        
+        Returns:
+            Dict with list of chat objects, hasMore, nextOffset
+        """
+        params = {
+            'limit': limit,
+            'offset': offset,
+            'skip_users': 'all',
+            'order': order
+        }
+        response = self._make_request('GET', '/chats', params=params)
+        return response.json()
 
-    def get_messages(self, chat_id: str) -> Dict:
-        """Get messages from a chat - TODO: Implement"""
-        raise NotImplementedError("Messages support coming in future update")
+    def get_chat_messages(self, chat_id: str, limit: int = 25,
+                         message_id: Optional[str] = None) -> Dict:
+        """Get messages from specific chat
+        
+        Args:
+            chat_id: Chat/conversation ID (user ID of the creator)
+            limit: Number of messages per page
+            message_id: Message ID for pagination (descending order)
+        
+        Returns:
+            Dict with list of messages, hasMore
+        """
+        params = {
+            'limit': limit,
+            'order': 'desc',
+            'skip_users': 'all'
+        }
+        if message_id:
+            params['id'] = message_id
+        
+        response = self._make_request('GET', f'/chats/{chat_id}/messages', params=params)
+        return response.json()
 
     # Future: Collections/Vault API
     def get_vault_lists(self) -> Dict:
