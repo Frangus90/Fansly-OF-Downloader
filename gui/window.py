@@ -225,7 +225,7 @@ class MainWindow(ctk.CTk):
             # Update both tab buttons (if they exist)
             if "status" in self.sections and "log_button" in self.sections["status"]:
                 self.sections["status"]["log_button"].configure(text="Show Log")
-            if hasattr(self, 'of_sections') and "status" in self.of_sections and "log_button" in self.of_sections["status"]:
+            if self.of_sections is not None and "status" in self.of_sections and "log_button" in self.of_sections["status"]:
                 self.of_sections["status"]["log_button"].configure(text="Show Log")
         else:
             self.log_window.deiconify()
@@ -236,7 +236,7 @@ class MainWindow(ctk.CTk):
             self.handlers.unread_errors = 0
             self.handlers._update_log_button_badge()
 
-            if hasattr(self, 'of_handlers'):
+            if self.of_handlers is not None:
                 self.of_handlers.unread_warnings = 0
                 self.of_handlers.unread_errors = 0
                 self.of_handlers._update_log_button_badge()
@@ -244,7 +244,7 @@ class MainWindow(ctk.CTk):
             # Update both tab buttons (if they exist)
             if "status" in self.sections and "log_button" in self.sections["status"]:
                 self.sections["status"]["log_button"].configure(text="Hide Log")
-            if hasattr(self, 'of_sections') and "status" in self.of_sections and "log_button" in self.of_sections["status"]:
+            if self.of_sections is not None and "status" in self.of_sections and "log_button" in self.of_sections["status"]:
                 self.of_sections["status"]["log_button"].configure(text="Hide Log")
 
     def open_log_file(self):
