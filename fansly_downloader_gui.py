@@ -45,8 +45,11 @@ def main():
                 "Application Error",
                 f"An error occurred. Please check fansly_downloader.log for details.\n\n{ex}"
             )
-        except Exception:
-            pass
+        except Exception as dialog_error:
+            # If we can't show the dialog, at least log to stderr
+            import sys
+            print(f"CRITICAL: Could not display error dialog: {dialog_error}", file=sys.stderr)
+            print(f"Original error: {ex}", file=sys.stderr)
 
         sys.exit(1)
     finally:

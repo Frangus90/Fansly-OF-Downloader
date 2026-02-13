@@ -170,9 +170,13 @@ def check_for_update(config: FanslyConfig) -> bool:
         # we don't want to ship drafts or pre-releases
         if release_info["draft"] or release_info["prerelease"]:
             return False
-        
+
         # remove the string "v" from the version tag
-        new_version = release_info["tag_name"].split('v')[1]
+        tag_parts = release_info["tag_name"].split('v')
+        if len(tag_parts) < 2:
+            print_warning(f"Invalid version tag format: {release_info['tag_name']}")
+            return False
+        new_version = tag_parts[1]
         
         # we do only want current platform compatible updates
         new_release = None

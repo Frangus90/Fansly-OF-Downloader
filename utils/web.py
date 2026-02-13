@@ -166,6 +166,7 @@ def guess_check_key(
         html_response = requests.get(
             fansly_url,
             headers=headers,
+            timeout=30,
         )
 
         if html_response.status_code == 200:
@@ -186,6 +187,7 @@ def guess_check_key(
                     js_response = requests.get(
                         main_js_url,
                         headers=headers,
+                        timeout=30,
                     )
 
                     if js_response.status_code == 200:
@@ -281,7 +283,8 @@ def get_release_info_from_github(current_program_version: str) -> dict | None:
             headers={
                 'user-agent': f'Fansly Downloader NG {current_program_version}',
                 'accept-language': 'en-US,en;q=0.9'
-            }
+            },
+            timeout=30,
         )
 
         response.raise_for_status()

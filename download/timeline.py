@@ -239,12 +239,17 @@ def download_timeline(config: FanslyConfig, state: DownloadState) -> None:
                     sleep(random.uniform(1, 2))
 
                     # Check if posts exist and have content
-                    if 'posts' not in timeline or len(timeline['posts']) == 0:
+                    if 'posts' not in timeline or not timeline['posts']:
                         print_warning("No posts in timeline response. Likely reached end of timeline content.")
                         break
 
                     # Get the last post's ID as the next cursor
-                    next_cursor = timeline['posts'][-1]['id']
+                    posts = timeline['posts']
+                    if not isinstance(posts, list) or len(posts) == 0:
+                        print_warning("Invalid or empty posts array in timeline response.")
+                        break
+
+                    next_cursor = posts[-1].get('id')
 
                     # Validate cursor
                     if next_cursor is None or next_cursor == timeline_cursor:

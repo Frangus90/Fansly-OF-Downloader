@@ -30,6 +30,7 @@ def run_ffmpeg(args: list[str]) -> bool:
         encoding='utf-8',
         capture_output=True,
         check=True,
+        timeout=300,
     )
 
     return result.returncode == 0

@@ -37,9 +37,31 @@ class MediaItem(object):
 
 
     def get_download_url_file_extension(self) -> str | None:
-        if self.download_url:
-            return self.download_url.split('/')[-1].split('.')[-1].split('?')[0]
-        else:
+        if not self.download_url:
+            return None
+
+        try:
+            from urllib.parse import urlparse
+            from pathlib import Path
+
+            # Parse URL and extract path
+            parsed = urlparse(self.download_url)
+            path = Path(parsed.path)
+
+            # Get extension without the leading dot
+            ext = path.suffix.lstrip('.')
+            return ext if ext else None
+        except Exception:
+            # Fallback to original method if parsing fails
+            try:
+                parts = self.download_url.split('/')
+                if parts:
+                    filename = parts[-1].split('?')[0]
+                    ext_parts = filename.split('.')
+                    if len(ext_parts) > 1:
+                        return ext_parts[-1]
+            except Exception:
+                pass
             return None
 
 
