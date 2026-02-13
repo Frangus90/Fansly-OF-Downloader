@@ -54,8 +54,8 @@ def self_update(config: FanslyConfig):
 
         # check if old config.ini exists, compare each pre-existing value of it and apply it to new config.ini
         copy_old_config_values()
-        
-        # temporary: delete deprecated files
+
+        # clean up deprecated files from previous versions
         delete_deprecated_files()
 
         # get release notes and if existent display it in terminal
