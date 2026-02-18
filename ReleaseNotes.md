@@ -36,6 +36,17 @@
   - Window resizing is smooth
   - Large creator lists load progressively without blocking UI
 
+### 1.6.1
+
+**Bug Fixes:**
+- Fixed crash when GitHub release tag has unexpected format during update check
+- Fixed potential crash when extracting post ID from malformed Fansly URLs
+- Fixed timeline cursor navigation accessing unvalidated array index
+- Fixed silent error swallowing in GUI - errors now logged to stderr if dialog fails
+- Added 30-second timeout to all HTTP requests to prevent indefinite hangs
+- Added 5-minute timeout to FFmpeg subprocess to prevent freezes on corrupted video
+- Fixed unsafe URL file extension parsing - now uses proper URL parser with fallback
+
 ### 1.5.0 2026-01-03
 
 **New Features:**
