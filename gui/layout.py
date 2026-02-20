@@ -139,14 +139,14 @@ def build_status_bar(parent, toggle_log_callback=None, check_update_callback=Non
 
 
 def build_tools_section(parent, handlers):
-    """Build tools section with Image Crop Tool button"""
+    """Build tools section with Image Crop Tool and Watermark Auto-Crop buttons"""
     tools_frame = ctk.CTkFrame(parent)
     tools_frame.pack(fill="x", padx=10, pady=5)
 
     # Title
     title = ctk.CTkLabel(
         tools_frame,
-        text="Tools - Image Crop Tool",
+        text="Tools",
         font=("Arial", 16, "bold"),
         anchor="w"
     )
@@ -161,7 +161,18 @@ def build_tools_section(parent, handlers):
         font=("Arial", 12),
         fg_color="#3b8ed0",
     )
-    crop_btn.grid(row=1, column=0, padx=10, pady=(5, 10), sticky="ew")
+    crop_btn.grid(row=1, column=0, padx=10, pady=(5, 5), sticky="ew")
+
+    # Watermark Auto-Crop button
+    watermark_btn = ctk.CTkButton(
+        tools_frame,
+        text="Open Watermark Auto-Crop",
+        command=handlers.on_open_watermark_crop,
+        height=35,
+        font=("Arial", 12),
+        fg_color="#5bc0de",
+    )
+    watermark_btn.grid(row=2, column=0, padx=10, pady=(5, 10), sticky="ew")
 
     # Configure grid
     tools_frame.grid_columnconfigure(0, weight=1)

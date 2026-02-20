@@ -23,3 +23,6 @@ numpy>=1.24.0
 scikit-image>=0.21.0  # SSIM quality validation
 mozjpeg-lossless-optimization>=1.1.2  # MozJPEG lossless optimization
 pillow-avif-plugin>=1.4.0  # AVIF format support
+
+# Watermark detection (OCR)
+easyocr>=1.7.0  # Text detection for watermark auto-crop

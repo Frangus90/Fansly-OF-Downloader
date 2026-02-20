@@ -25,7 +25,7 @@ class EventHandlers:
         # Badge tracking for log button
         self.unread_warnings = 0
         self.unread_errors = 0
-        
+
         # Log message batching
         self._log_queue = []
         self._log_flush_scheduled = False
@@ -133,18 +133,18 @@ class EventHandlers:
 
         # Add to queue for batching
         self._log_queue.append((message, level))
-        
+
         # Schedule flush if not already scheduled
         if not self._log_flush_scheduled:
             self._log_flush_scheduled = True
             self.window.after(150, self._flush_log_queue)
-    
+
     def _flush_log_queue(self):
         """Process all queued log messages at once"""
         if not self._log_queue:
             self._log_flush_scheduled = False
             return
-        
+
         # Process all queued logs
         for message, level in self._log_queue:
             # Always send to log window
@@ -163,11 +163,11 @@ class EventHandlers:
                 self.unread_warnings += 1
             elif level == "error":
                 self.unread_errors += 1
-        
+
         # Update badge once after processing all messages
         if self.unread_warnings > 0 or self.unread_errors > 0:
             self._update_log_button_badge()
-        
+
         # Clear queue
         self._log_queue.clear()
         self._log_flush_scheduled = False
@@ -215,6 +215,13 @@ class EventHandlers:
         # Open crop tool window (it will load last used dir or use default)
         crop_window = ImageCropWindow(self.window, default_output_dir=None)
         crop_window.focus()
+
+    def on_open_watermark_crop(self):
+        """Handle opening the watermark auto-crop tool window"""
+        from gui.tools.watermark_crop_window import WatermarkCropWindow
+
+        watermark_window = WatermarkCropWindow(self.window, default_output_dir=None)
+        watermark_window.focus()
 
     def import_subscriptions(self) -> dict:
         """
@@ -306,7 +313,7 @@ class OnlyFansEventHandlers:
         # Badge tracking for log button
         self.unread_warnings = 0
         self.unread_errors = 0
-        
+
         # Log message batching
         self._log_queue = []
         self._log_flush_scheduled = False
@@ -395,18 +402,18 @@ class OnlyFansEventHandlers:
 
         # Add to queue for batching
         self._log_queue.append((message, level))
-        
+
         # Schedule flush if not already scheduled
         if not self._log_flush_scheduled:
             self._log_flush_scheduled = True
             self.window.after(150, self._flush_log_queue)
-    
+
     def _flush_log_queue(self):
         """Process all queued log messages at once"""
         if not self._log_queue:
             self._log_flush_scheduled = False
             return
-        
+
         # Process all queued logs
         for message, level in self._log_queue:
             # Always send to log window
@@ -425,11 +432,11 @@ class OnlyFansEventHandlers:
                 self.unread_warnings += 1
             elif level == "error":
                 self.unread_errors += 1
-        
+
         # Update badge once after processing all messages
         if self.unread_warnings > 0 or self.unread_errors > 0:
             self._update_log_button_badge()
-        
+
         # Clear queue
         self._log_queue.clear()
         self._log_flush_scheduled = False
@@ -465,6 +472,13 @@ class OnlyFansEventHandlers:
         # Open crop tool window (it will load last used dir or use default)
         crop_window = ImageCropWindow(self.window, default_output_dir=None)
         crop_window.focus()
+
+    def on_open_watermark_crop(self):
+        """Handle opening the watermark auto-crop tool window"""
+        from gui.tools.watermark_crop_window import WatermarkCropWindow
+
+        watermark_window = WatermarkCropWindow(self.window, default_output_dir=None)
+        watermark_window.focus()
 
     def on_close(self):
         """Handle window close request - stop downloads if running"""

@@ -11,6 +11,7 @@ from .presets import (
     get_preset_aspect_ratio,
     format_aspect_ratio,
 )
+from .watermark_crop import WatermarkDetector, load_blacklist, save_blacklist
 
 __all__ = [
     'crop_image',
@@ -26,4 +27,7 @@ __all__ = [
     'get_preset_names',
     'get_preset_aspect_ratio',
     'format_aspect_ratio',
+    'WatermarkDetector',
+    'load_blacklist',
+    'save_blacklist',
 ]
