@@ -278,6 +278,15 @@ def build_exe() -> str | None:
             "--hidden-import=gui.tabs.onlyfans_tab",
             "--hidden-import=gui.widgets.onlyfans_auth",
             "--hidden-import=gui.widgets.credential_help",
+            # Exclude heavy OCR/ML dependencies (optional, installed separately)
+            "--exclude-module=easyocr",
+            "--exclude-module=torch",
+            "--exclude-module=torchvision",
+            "--exclude-module=torchaudio",
+            "--exclude-module=scipy",
+            "--exclude-module=cv2",
+            "--exclude-module=skimage",
+            "--exclude-module=shapely",
             "--clean",  # Clean cache
             "--noconfirm",  # Overwrite without asking
         ]

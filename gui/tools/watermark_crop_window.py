@@ -169,14 +169,30 @@ class WatermarkCropWindow(ctk.CTkToplevel):
         else:
             status_text = "EasyOCR: Not Installed"
             status_color = "#dc3545"
-        status_label = ctk.CTkLabel(
+        self.ocr_status_label = ctk.CTkLabel(
             panel,
             text=status_text,
             font=("Arial", 10),
             text_color=status_color,
             anchor="w",
         )
-        status_label.pack(padx=15, pady=(0, 10), anchor="w")
+        self.ocr_status_label.pack(padx=15, pady=(0, 5), anchor="w")
+
+        if not EASYOCR_AVAILABLE:
+            install_btn = ctk.CTkButton(
+                panel,
+                text="Install EasyOCR",
+                command=self._on_install_easyocr,
+                height=28,
+                font=("Arial", 10),
+                fg_color="#ffc107",
+                text_color="#000000",
+                hover_color="#e0a800",
+            )
+            install_btn.pack(fill="x", padx=15, pady=(0, 10))
+        else:
+            # Spacer to keep layout consistent
+            ctk.CTkLabel(panel, text="", height=5).pack()
 
         # Upload button
         self.upload_btn = ctk.CTkButton(
@@ -1115,6 +1131,84 @@ class WatermarkCropWindow(ctk.CTkToplevel):
 
         if open_folder:
             self._open_folder(self.output_dir)
+
+    # -- EasyOCR install --
+
+    def _on_install_easyocr(self):
+        """Install easyocr via pip. Only works when running from source."""
+        import sys as _sys
+
+        if getattr(_sys, "frozen", False):
+            dialogs.show_info(
+                self,
+                "Running as Executable",
+                "OCR features require running from source.\n\n"
+                "1. Install Python 3.10+\n"
+                "2. Run: pip install easyocr\n"
+                "3. Launch with: python fansly_downloader_gui.py",
+            )
+            return
+
+        result = dialogs.ask_yes_no(
+            self,
+            "Install EasyOCR",
+            "This will run:\n  pip install easyocr\n\n"
+            "This downloads ~1 GB of ML models.\n"
+            "Continue?",
+        )
+        if not result:
+            return
+
+        self.ocr_status_label.configure(
+            text="Installing EasyOCR...", text_color="#ffc107"
+        )
+        self.update()
+
+        thread = threading.Thread(
+            target=self._install_easyocr_thread, daemon=True
+        )
+        thread.start()
+
+    def _install_easyocr_thread(self):
+        import sys as _sys
+
+        try:
+            result = subprocess.run(
+                [_sys.executable, "-m", "pip", "install", "easyocr"],
+                capture_output=True,
+                text=True,
+                timeout=600,
+            )
+            if result.returncode == 0:
+                def on_success():
+                    self.ocr_status_label.configure(
+                        text="EasyOCR: Installed (restart required)",
+                        text_color="#28a745",
+                    )
+                    dialogs.show_info(
+                        self,
+                        "Installed",
+                        "EasyOCR installed successfully.\n"
+                        "Restart the application to use OCR features.",
+                    )
+                self.after(0, on_success)
+            else:
+                def on_fail():
+                    self.ocr_status_label.configure(
+                        text="EasyOCR: Install failed", text_color="#dc3545"
+                    )
+                    dialogs.show_error(
+                        self, "Install Failed",
+                        f"pip returned error:\n{result.stderr[:500]}",
+                    )
+                self.after(0, on_fail)
+        except Exception as e:
+            def on_error():
+                self.ocr_status_label.configure(
+                    text="EasyOCR: Install failed", text_color="#dc3545"
+                )
+                dialogs.show_error(self, "Install Error", str(e))
+            self.after(0, on_error)
 
     # -- Utilities --
 
