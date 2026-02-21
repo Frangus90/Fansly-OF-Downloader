@@ -280,7 +280,7 @@ powershell -Command "Expand-Archive -Path '{downloaded_path}' -DestinationPath '
 REM Find the inner folder (zip contains AppName/...)
 for /d %%D in ("%TEMP_EXTRACT%\\*") do set INNER_DIR=%%D
 
-REM Copy extracted files over the app directory (preserves ocr_libs etc.)
+REM Copy extracted files over the app directory (preserves ocr_env etc.)
 xcopy /s /y /q "%INNER_DIR%\\*" "{app_dir}\\"
 
 REM Clean up

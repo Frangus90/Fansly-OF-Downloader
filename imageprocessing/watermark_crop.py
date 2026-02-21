@@ -2,18 +2,14 @@
 
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Optional
 
 from PIL import Image
 
 from .crop import crop_image
-
-try:
-    import easyocr
-    EASYOCR_AVAILABLE = True
-except ImportError:
-    EASYOCR_AVAILABLE = False
+from .ocr_env import is_ocr_installed, OcrProcess
 
 
 BLACKLIST_FILENAME = "watermark_blacklist.json"
@@ -61,24 +57,45 @@ class WatermarkDetector:
     """Detects watermark text in images using EasyOCR and crops it away."""
 
     def __init__(self):
-        self._reader: Optional[object] = None
+        self._ocr = OcrProcess()
+        self._direct_reader: Optional[object] = None
 
-    def _get_reader(self) -> object:
-        """Lazy-initialize EasyOCR reader. Tries GPU first, falls back to CPU."""
-        if not EASYOCR_AVAILABLE:
-            raise RuntimeError(
-                "easyocr is not installed. Install it with: pip install easyocr"
-            )
-        if self._reader is None:
+    def _detect_text_direct(
+        self,
+        image_path: str,
+        text_threshold: float,
+        low_text: float,
+        mag_ratio: float,
+    ) -> list[dict]:
+        """In-process OCR for development (non-frozen) when easyocr is importable."""
+        import easyocr
+
+        if self._direct_reader is None:
+            gpu = False
             try:
                 import torch
-                if torch.cuda.is_available():
-                    self._reader = easyocr.Reader(["en"], gpu=True)
-                    return self._reader
+                gpu = torch.cuda.is_available()
             except Exception:
                 pass
-            self._reader = easyocr.Reader(["en"], gpu=False)
-        return self._reader
+            self._direct_reader = easyocr.Reader(["en"], gpu=gpu)
+
+        results = self._direct_reader.readtext(
+            image_path,
+            text_threshold=text_threshold,
+            low_text=low_text,
+            mag_ratio=mag_ratio,
+        )
+
+        detections = []
+        for bbox, text, confidence in results:
+            ys = [int(point[1]) for point in bbox]
+            xs = [int(point[0]) for point in bbox]
+            detections.append({
+                "bbox": (min(ys), max(ys), min(xs), max(xs)),
+                "text": text,
+                "confidence": confidence,
+            })
+        return detections
 
     def detect_text(
         self,
@@ -89,30 +106,29 @@ class WatermarkDetector:
     ) -> list[dict]:
         """Run OCR on an image and return all detected text regions.
 
+        Uses in-process easyocr when running from source, or the
+        embedded Python worker subprocess when running as a frozen exe.
+
         Returns:
             List of dicts with keys: 'bbox', 'text', 'confidence'.
             bbox is (y_min, y_max, x_min, x_max) in pixel coordinates.
         """
-        reader = self._get_reader()
-        results = reader.readtext(
-            image_path,
-            text_threshold=text_threshold,
-            low_text=low_text,
-            mag_ratio=mag_ratio,
+        if not is_ocr_installed():
+            raise RuntimeError("EasyOCR is not installed. Use the Install button.")
+
+        # Dev mode: use in-process when easyocr is directly importable
+        if not getattr(sys, "frozen", False):
+            try:
+                return self._detect_text_direct(
+                    image_path, text_threshold, low_text, mag_ratio
+                )
+            except ImportError:
+                pass
+
+        # Frozen exe: delegate to the embedded Python worker
+        return self._ocr.detect_text(
+            image_path, text_threshold, low_text, mag_ratio
         )
-
-        detections = []
-        for bbox, text, confidence in results:
-            # bbox is [[x1,y1], [x2,y1], [x2,y2], [x1,y2]] (quad corners)
-            ys = [int(point[1]) for point in bbox]
-            xs = [int(point[0]) for point in bbox]
-            detections.append({
-                "bbox": (min(ys), max(ys), min(xs), max(xs)),
-                "text": text,
-                "confidence": confidence,
-            })
-
-        return detections
 
     def find_blacklisted_regions(
         self,

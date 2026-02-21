@@ -260,6 +260,8 @@ def build_exe() -> str | None:
             # Config files
             "--add-data=config.sample.ini;.",
             "--add-data=onlyfans_config.ini;.",
+            # OCR worker script (runs under embedded Python)
+            "--add-data=ocr_worker.py;.",
             # Icon file (for runtime taskbar icon)
             "--add-data=resources/fansly_ng.ico;resources",
             # Base packages
