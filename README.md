@@ -24,7 +24,6 @@ This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [F
 * You may also run it in fully silent mode without the close prompt at the very end (`-ni -npox`) - eg. running **Fansly Downloader NG** from another script or from a scheduled task/cron job
 * Logs all relevant messages (`Info`, `Warning`, `Error`, ...) of the last few sessions to `fansly_downloader_ng.log`. A history of 5 log files with a maximum size of 1 MiB will be preserved and can be deleted at your own discretion.
 * Easier-to-extend, modern, modular and robust codebase
-* It doesn't care about starring the repository
 
 **Fansly & OnlyFans Downloader NG** is the go-to app for all your bulk media downloading needs. Download photos, videos, audio or any other media from Fansly and OnlyFans. This powerful dual-platform tool has got you covered! Say goodbye to the hassle of individually downloading each piece of media – now you can download them all or just some in one go.
 
@@ -54,7 +53,7 @@ For detailed configuration settings, see the [Wiki](https://github.com/Frangus90
 #### Windows (Executable)
 
 1. Download the latest release from the [releases page](https://github.com/Frangus90/fansly-downloader-ng/releases/latest)
-2. Extract and run `fansly_downloader_gui.exe`
+2. Extract and run `FanslyOFDownloaderNG.exe`
 3. Complete the setup wizard with your Fansly auth token
 4. Add creators and start downloading
 
@@ -89,7 +88,7 @@ OnlyFans is supported through both GUI and CLI:
 
 #### GUI (Recommended)
 
-1. Run `fansly_downloader_gui.exe` (Windows) or `python fansly_downloader_gui.py`
+1. Run `FanslyOFDownloaderNG.exe` (Windows) or `python fansly_downloader_gui.py`
 2. Switch to the **OnlyFans tab**
 3. Enter your OnlyFans credentials (sess, auth_id, user_agent, x-bc)
 4. Add creators and configure settings
@@ -125,6 +124,7 @@ python onlyfans_downloader.py -i
 - **Log Access** - Press Ctrl+L to view diagnostic logs
 - **Incremental Mode** - Toggle to download only new content
 - **Image Crop Tool** - Built-in bulk image cropping with drag-and-drop support (works for all downloads)
+- **Watermark Auto-Crop Tool** - OCR-based watermark detection and removal with GPU acceleration
 
 ### Image Crop Tool
 
@@ -289,7 +289,7 @@ pip install pyinstaller
 python build_exe.py
 ```
 
-The executable will be in `dist/fansly_downloader_gui.exe`
+The executable will be in `dist/FanslyOFDownloaderNG/FanslyOFDownloaderNG.exe`
 
 The build script automatically includes all required assets, icons, and dependencies.
 
@@ -332,7 +332,7 @@ A: Yes! Full OnlyFans support with both GUI (dedicated tab) and CLI (`onlyfans_d
 A: No. The executable is Windows-only, but the Python version works on Windows, macOS, and Linux.
 
 **Q: Will I get banned?**
-A: While there are no guarantees, it's worth noting that among the 24,000+ previous users, there have been no reported incidents. The tool respects rate limits and mimics normal browser behavior for both platforms.
+A: There are no guarantees. The tool respects rate limits and mimics normal browser behavior for both platforms, but use at your own discretion.
 
 **Q: Does this bypass paywalls?**
 A: No. You can only download content you have legitimate access to through your subscriptions. No paywall bypassing features will be added.
@@ -344,9 +344,7 @@ A: The executable is not digitally signed (certificates are expensive), causing 
 A: No, mobile devices are not currently supported.
 
 **Q: Could you add X feature or do X change?**
-A: I'm regrettably very limited on time and thus primarily do stuff I find useful myself. You can contribute code by [opening a pull request](https://github.com/Frangus90/fansly-downloader-ng/pulls).
-
-Please note that "Issue" tickets are reserved for reporting genuine or suspected bugs in the codebase of the downloader which require attention from the developer. They are not for general computer user problems.
+A: Feature requests are welcome — open an issue or submit a [pull request](https://github.com/Frangus90/fansly-downloader-ng/pulls). Issue tickets are for genuine bugs, not general support questions.
 
 ## What's New
 
@@ -359,9 +357,6 @@ Contributions are welcome! Please open a pull request with your changes.
 ### Special Thanks
 
 - **[@Avnsx](https://github.com/Avnsx)** - Original Fansly Downloader
-- **[@liviaerxin](https://github.com/liviaerxin)** - Cross-platform plyvel package
-
-A heartfelt thank you goes out to [@liviaerxin](https://github.com/liviaerxin) for their invaluable contribution in providing the cross-platform package [plyvel](https://github.com/wbolster/plyvel). Due to [these builds](https://github.com/liviaerxin/plyvel/releases/latest) Fansly downloader NG's initial interactive cross-platform setup has become a reality.
 
 ## License
 
@@ -375,4 +370,4 @@ This project is not affiliated with, sponsored by, or endorsed by Fansly, OnlyFa
 
 **OnlyFans:** "OnlyFans" or [onlyfans.com](https://onlyfans.com/) is operated by Fenix International Limited. This repository and the provided content in it isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited or "OnlyFans".
 
-The developer (referred to: "prof79" in the following) of this code is not responsible for the end users actions, no unlawful activities of any kind are being encouraged. Statements and processes described in this repository only represent best practice guidance aimed at fostering an effective software usage. The repository was written purely for educational purposes, in an entirely theoretical environment. Thus, any information is presented on the condition that the developer of this code shall not be held liable in no event to you or anyone else for any direct, special, incidental, indirect or consequential damages of any kind, or any damages whatsoever, including without limitation, loss of profit, loss of use, savings or revenue, or the claims of third parties, whether the developer has advised of the possibility of such loss, however caused and on any theory of liability, arising out of or in connection with the possession, use or performance of this software. The material embodied in this repository is supplied to you "as-is" and without warranty of any kind, express, implied or otherwise, including without limitation, any warranty of fitness. This code does not bypass any paywalls & no end user information is collected during usage. Finally it is important to note that this GitHub repository is the sole branch maintained and owned by the developer and any third-party websites or entities, that might refer to or be referred from it are in no way affiliated with this downloader, either directly or indirectly. This disclaimer is preliminary and is subject to revision.
+The developer of this software is not responsible for end-user actions. This software is provided "as-is" without warranty of any kind. No unlawful activities are encouraged. This code does not bypass any paywalls and no user data is collected during usage.
