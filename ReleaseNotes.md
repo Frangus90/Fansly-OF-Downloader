@@ -2,6 +2,17 @@
 
 ## 🗒️ Release Notes
 
+### 1.8.1
+
+**Watermark Auto-Crop Tool:**
+- **One-Click EasyOCR Install** - Install EasyOCR directly from the app with a single button click, no terminal required
+- **Automatic GPU Detection** - Detects NVIDIA GPU and installs the correct CUDA-accelerated PyTorch version automatically (CUDA 11.8, 12.1, 12.4, 12.6, 12.8 supported)
+- **CPU Fallback** - Automatically falls back to CPU-only PyTorch if no compatible NVIDIA GPU is detected
+- **Embedded Python Runtime** - EasyOCR runs in its own isolated Python 3.11 environment next to the exe, completely independent from any system Python
+- **No Restart Required** - OCR becomes available immediately after installation completes
+- **GPU/CPU Status Label** - Status shows "EasyOCR: Ready (GPU)" or "EasyOCR: Ready (CPU)" after install
+- **Persistent Worker Process** - EasyOCR model loads once and is reused across all scans in a session, eliminating repeated model load overhead for batch scanning
+
 ### 1.6.1
 
 **Bug Fixes:**

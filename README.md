@@ -41,6 +41,7 @@ This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [F
 - **Automatic Retry Logic** - Handles rate limiting and connection issues
 - **M3U8 Support** - Download streaming videos automatically
 - **Bulk Image Cropping** - Built-in tool for batch image processing (works for both platforms)
+- **Watermark Auto-Crop** - Automatically detect and remove watermarks using OCR with one-click GPU-accelerated EasyOCR install
 - **Bulk Processing** - Easily update prior download folders
 - **Customizable** - Separate media into sub-folders, download previews, and more
 
@@ -165,6 +166,26 @@ The built-in Image Crop Tool allows you to batch process and crop downloaded ima
 4. **Compress Preview** tab - Compare quality with slider
 5. Choose Quick (target size) or Advanced (manual) mode
 6. Process batch to export
+
+### Watermark Auto-Crop Tool
+
+Automatically detect and remove text watermarks from images using OCR:
+
+**Features:**
+- **OCR-Based Detection** - Finds watermark text anywhere in the image
+- **Blacklist Matching** - Only crop regions containing your specified words (e.g. creator username)
+- **Crop All Mode** - Remove all detected text regions without a blacklist
+- **Batch Scanning** - Scan entire folders at once
+- **GPU Acceleration** - Uses NVIDIA GPU via CUDA for fast OCR when available
+
+**EasyOCR Installation:**
+1. Open Tools → Watermark Auto-Crop
+2. Click **Install EasyOCR** - the app auto-detects your GPU
+3. Confirm the download (~1.5 GB CPU / ~3 GB GPU)
+4. Installation completes in-app, no restart needed
+5. Status shows **EasyOCR: Ready (GPU)** or **EasyOCR: Ready (CPU)**
+
+> The OCR engine runs in an isolated Python environment next to the exe. No system Python required.
 
 ## CLI Usage
 
