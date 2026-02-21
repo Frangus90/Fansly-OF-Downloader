@@ -89,15 +89,6 @@ class WatermarkDetector:
     ) -> list[dict]:
         """Run OCR on an image and return all detected text regions.
 
-        Args:
-            image_path: Path to the image file.
-            text_threshold: Confidence threshold for text detection (0.0-1.0).
-                Lower = more sensitive, detects faint text. Default 0.7.
-            low_text: Text low-bound score for text region grouping (0.0-1.0).
-                Lower = merges more aggressively. Default 0.4.
-            mag_ratio: Image magnification ratio before detection.
-                Higher = better for small text but slower. Default 1.0.
-
         Returns:
             List of dicts with keys: 'bbox', 'text', 'confidence'.
             bbox is (y_min, y_max, x_min, x_max) in pixel coordinates.
@@ -134,13 +125,6 @@ class WatermarkDetector:
         1. Direct substring match on raw text
         2. Stripped match (alphanumeric only) to ignore spaces/punctuation
         3. OCR substitution match to handle common misreads (l/1/i, o/0, etc.)
-
-        Args:
-            detections: Output from detect_text().
-            blacklist: List of words to match (case-insensitive).
-
-        Returns:
-            Subset of detections that contain a blacklisted word.
         """
         if not blacklist:
             return []
@@ -183,23 +167,14 @@ class WatermarkDetector:
     ) -> Optional[tuple[int, int, int, int]]:
         """Calculate the crop box that removes watermark bands.
 
-        For each matched detection, determines whether it's near the top or
-        bottom of the image and removes the full-width band from that edge.
-
-        Args:
-            image_width: Image width in pixels.
-            image_height: Image height in pixels.
-            matched_detections: Detections containing blacklisted text.
-            margin: Extra pixels to crop beyond the text boundary.
-
         Returns:
             (x1, y1, x2, y2) crop box to keep, or None if no crop needed.
         """
         if not matched_detections:
             return None
 
-        trim_top = 0  # no top crop until a detection moves this inward
-        bottom_crop_line = image_height  # no bottom crop until a detection moves this inward
+        trim_top = 0
+        bottom_crop_line = image_height
         midpoint = image_height / 2
 
         for detection in matched_detections:
@@ -207,11 +182,9 @@ class WatermarkDetector:
             center_y = (y_min + y_max) / 2
 
             if center_y >= midpoint:
-                # Text is in bottom half - crop from text top to image bottom
                 crop_line = max(0, y_min - margin)
                 bottom_crop_line = min(bottom_crop_line, crop_line)
             else:
-                # Text is in top half - crop from image top to text bottom
                 crop_line = min(image_height, y_max + margin)
                 trim_top = max(trim_top, crop_line)
 
@@ -231,17 +204,8 @@ class WatermarkDetector:
     ) -> tuple[Optional[Image.Image], list[dict], list[dict]]:
         """Detect and crop watermark text from an image.
 
-        Args:
-            image_path: Path to the image file.
-            blacklist: List of words to match.
-            margin: Extra pixels to crop beyond the text boundary.
-            text_threshold: OCR text confidence threshold.
-            low_text: OCR low text score threshold.
-            mag_ratio: Image magnification ratio for OCR.
-
         Returns:
             Tuple of (cropped_image_or_None, all_detections, matched_detections).
-            cropped_image is None if no watermark was found.
         """
         detections = self.detect_text(
             image_path,
@@ -266,14 +230,7 @@ class WatermarkDetector:
 
 
 def load_blacklist(directory: Optional[Path] = None) -> list[str]:
-    """Load watermark blacklist from JSON file.
-
-    Args:
-        directory: Directory containing the blacklist file. Defaults to cwd.
-
-    Returns:
-        List of blacklisted words.
-    """
+    """Load watermark blacklist from JSON file."""
     if directory is None:
         directory = Path.cwd()
 
@@ -292,12 +249,7 @@ def load_blacklist(directory: Optional[Path] = None) -> list[str]:
 
 
 def save_blacklist(words: list[str], directory: Optional[Path] = None) -> None:
-    """Save watermark blacklist to JSON file.
-
-    Args:
-        words: List of words to save.
-        directory: Directory to save to. Defaults to cwd.
-    """
+    """Save watermark blacklist to JSON file."""
     if directory is None:
         directory = Path.cwd()
 

@@ -191,7 +191,6 @@ class WatermarkCropWindow(ctk.CTkToplevel):
             )
             install_btn.pack(fill="x", padx=15, pady=(0, 10))
         else:
-            # Spacer to keep layout consistent
             ctk.CTkLabel(panel, text="", height=5).pack()
 
         # Upload button
@@ -272,14 +271,14 @@ class WatermarkCropWindow(ctk.CTkToplevel):
         sens_frame.pack(fill="x", padx=15, pady=(0, 5))
 
         self.sensitivity_var = ctk.StringVar(value="Normal")
-        sensitivity_menu = ctk.CTkOptionMenu(
+        self.sensitivity_menu = ctk.CTkOptionMenu(
             sens_frame,
             values=["Low", "Normal", "High", "Max"],
             variable=self.sensitivity_var,
             width=120,
             height=28,
         )
-        sensitivity_menu.pack(side="left")
+        self.sensitivity_menu.pack(side="left")
 
         sens_hint = ctk.CTkLabel(
             panel,
@@ -1134,50 +1133,126 @@ class WatermarkCropWindow(ctk.CTkToplevel):
 
     # -- EasyOCR install --
 
-    def _on_install_easyocr(self):
-        """Install easyocr via pip. Only works when running from source."""
-        import sys as _sys
+    @staticmethod
+    def _find_system_python() -> str | None:
+        """Find a usable system Python interpreter."""
+        import shutil
+        for name in ("python3", "python"):
+            path = shutil.which(name)
+            if path:
+                return path
+        return None
 
-        if getattr(_sys, "frozen", False):
-            dialogs.show_info(
-                self,
-                "Running as Executable",
-                "OCR features require running from source.\n\n"
-                "1. Install Python 3.10+\n"
-                "2. Run: pip install easyocr\n"
-                "3. Launch with: python fansly_downloader_gui.py",
-            )
-            return
-
-        result = dialogs.ask_yes_no(
-            self,
-            "Install EasyOCR",
-            "This will run:\n  pip install easyocr\n\n"
-            "This downloads ~1 GB of ML models.\n"
-            "Continue?",
-        )
-        if not result:
-            return
-
-        self.ocr_status_label.configure(
-            text="Installing EasyOCR...", text_color="#ffc107"
-        )
-        self.update()
-
-        thread = threading.Thread(
-            target=self._install_easyocr_thread, daemon=True
-        )
-        thread.start()
-
-    def _install_easyocr_thread(self):
-        import sys as _sys
-
+    @staticmethod
+    def _system_python_has_easyocr(python_path: str) -> bool:
+        """Check if system Python already has easyocr installed."""
         try:
             result = subprocess.run(
-                [_sys.executable, "-m", "pip", "install", "easyocr"],
+                [python_path, "-c", "import easyocr; print('ok')"],
+                capture_output=True, text=True, timeout=15,
+            )
+            return result.returncode == 0 and "ok" in result.stdout
+        except Exception:
+            return False
+
+    def _get_ocr_libs_dir(self) -> Path:
+        """Get the ocr_libs directory next to the executable."""
+        import sys as _sys
+        return Path(_sys.executable).parent / "ocr_libs"
+
+    def _on_install_easyocr(self):
+        """Install easyocr via pip, or link to existing system install."""
+        import sys as _sys
+
+        is_frozen = getattr(_sys, "frozen", False)
+
+        if is_frozen:
+            python_path = self._find_system_python()
+            if not python_path:
+                dialogs.show_error(
+                    self,
+                    "Python Not Found",
+                    "EasyOCR requires Python to be installed on your system.\n\n"
+                    "1. Install Python 3.10+ from python.org\n"
+                    "2. Ensure 'Add to PATH' is checked during install\n"
+                    "3. Restart this application and try again",
+                )
+                return
+
+            # Check if system Python already has easyocr
+            if self._system_python_has_easyocr(python_path):
+                dialogs.show_info(
+                    self,
+                    "EasyOCR Found",
+                    f"EasyOCR is already installed in your system Python.\n\n"
+                    f"Python: {python_path}\n\n"
+                    f"Restart the application to use OCR features.",
+                )
+                self.ocr_status_label.configure(
+                    text="EasyOCR: Found (restart required)",
+                    text_color="#28a745",
+                )
+                return
+
+            target_dir = self._get_ocr_libs_dir()
+            result = dialogs.ask_yes_no(
+                self,
+                "Install EasyOCR",
+                f"This will install EasyOCR using your system Python.\n\n"
+                f"Python: {python_path}\n"
+                f"Install to: {target_dir}\n\n"
+                f"This downloads ~1-2 GB of ML dependencies.\n"
+                f"Continue?",
+            )
+            if not result:
+                return
+
+            self.ocr_status_label.configure(
+                text="Installing EasyOCR...", text_color="#ffc107"
+            )
+            self.update()
+
+            thread = threading.Thread(
+                target=self._install_easyocr_thread,
+                args=(python_path, str(target_dir)),
+                daemon=True,
+            )
+            thread.start()
+        else:
+            # Running from source: install into current environment
+            result = dialogs.ask_yes_no(
+                self,
+                "Install EasyOCR",
+                "This will run:\n  pip install easyocr\n\n"
+                "This downloads ~1-2 GB of ML dependencies.\n"
+                "Continue?",
+            )
+            if not result:
+                return
+
+            self.ocr_status_label.configure(
+                text="Installing EasyOCR...", text_color="#ffc107"
+            )
+            self.update()
+
+            thread = threading.Thread(
+                target=self._install_easyocr_thread,
+                args=(_sys.executable, None),
+                daemon=True,
+            )
+            thread.start()
+
+    def _install_easyocr_thread(self, python_path: str, target_dir: str | None):
+        try:
+            cmd = [python_path, "-m", "pip", "install", "easyocr"]
+            if target_dir:
+                cmd.extend(["--target", target_dir])
+
+            result = subprocess.run(
+                cmd,
                 capture_output=True,
                 text=True,
-                timeout=600,
+                timeout=900,
             )
             if result.returncode == 0:
                 def on_success():

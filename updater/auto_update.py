@@ -236,25 +236,69 @@ def download_update_async(
     return thread
 
 
-def create_windows_update_script(current_exe: Path, new_exe: Path) -> Path:
+def create_windows_update_script(current_exe: Path, downloaded_path: Path) -> Path:
     """
     Create a batch script that will:
     1. Wait for current process to exit
-    2. Replace exe with new version
+    2. Extract zip / replace exe with new version
     3. Restart the application
 
     Args:
         current_exe: Path to the current executable
-        new_exe: Path to the downloaded new executable
+        downloaded_path: Path to the downloaded update file (.zip or .exe)
 
     Returns:
         Path to the created batch script
     """
     script_path = Path(tempfile.gettempdir()) / "fansly_update.bat"
     pid = os.getpid()
+    app_dir = current_exe.parent
 
-    # Batch script content
-    script = f'''@echo off
+    if downloaded_path.suffix.lower() == ".zip":
+        # Zip update: extract over the app directory
+        script = f'''@echo off
+title Fansly Downloader NG - Updating...
+echo Waiting for application to close...
+
+:wait_loop
+tasklist /fi "pid eq {pid}" 2>nul | find "{pid}" >nul
+if not errorlevel 1 (
+    timeout /t 1 /nobreak >nul
+    goto wait_loop
+)
+
+echo Applying update...
+timeout /t 1 /nobreak >nul
+
+REM Extract zip to temp location
+set TEMP_EXTRACT=%TEMP%\\fansly_update_extract
+if exist "%TEMP_EXTRACT%" rmdir /s /q "%TEMP_EXTRACT%"
+mkdir "%TEMP_EXTRACT%"
+
+powershell -Command "Expand-Archive -Path '{downloaded_path}' -DestinationPath '%TEMP_EXTRACT%' -Force"
+
+REM Find the inner folder (zip contains AppName/...)
+for /d %%D in ("%TEMP_EXTRACT%\\*") do set INNER_DIR=%%D
+
+REM Copy extracted files over the app directory (preserves ocr_libs etc.)
+xcopy /s /y /q "%INNER_DIR%\\*" "{app_dir}\\"
+
+REM Clean up
+rmdir /s /q "%TEMP_EXTRACT%"
+del /f /q "{downloaded_path}"
+
+echo Update complete! Starting application...
+timeout /t 1 /nobreak >nul
+
+REM Restart application
+start "" "{current_exe}"
+
+REM Delete this script
+del /f /q "%~f0"
+'''
+    else:
+        # Single exe update (legacy fallback)
+        script = f'''@echo off
 title Fansly Downloader NG - Updating...
 echo Waiting for application to close...
 
@@ -273,10 +317,10 @@ if exist "{current_exe}.bak" del /f /q "{current_exe}.bak"
 move /y "{current_exe}" "{current_exe}.bak"
 
 REM Copy new version
-copy /y "{new_exe}" "{current_exe}"
+copy /y "{downloaded_path}" "{current_exe}"
 
 REM Clean up
-del /f /q "{new_exe}"
+del /f /q "{downloaded_path}"
 
 echo Update complete! Starting application...
 timeout /t 1 /nobreak >nul

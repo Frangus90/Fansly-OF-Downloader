@@ -10,6 +10,33 @@ import os
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(__file__))
 
+# Add ocr_libs to path if it exists (EasyOCR installed post-build)
+_ocr_libs = os.path.join(os.path.dirname(os.path.abspath(sys.executable)), "ocr_libs")
+if os.path.isdir(_ocr_libs) and _ocr_libs not in sys.path:
+    sys.path.insert(0, _ocr_libs)
+
+# If frozen and easyocr still not importable, check system Python's site-packages
+if getattr(sys, "frozen", False):
+    try:
+        import easyocr as _test_easyocr  # noqa: F401
+    except ImportError:
+        try:
+            import shutil
+            import subprocess
+            _python = shutil.which("python3") or shutil.which("python")
+            if _python:
+                _result = subprocess.run(
+                    [_python, "-c", "import easyocr; print(easyocr.__path__[0])"],
+                    capture_output=True, text=True, timeout=10,
+                )
+                if _result.returncode == 0:
+                    _easyocr_path = _result.stdout.strip()
+                    _site_packages = os.path.dirname(_easyocr_path)
+                    if _site_packages not in sys.path:
+                        sys.path.insert(0, _site_packages)
+        except Exception:
+            pass
+
 from gui.app import create_app
 
 # BUILD VERIFICATION - Updated each time we rebuild

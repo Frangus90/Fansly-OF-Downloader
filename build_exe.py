@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+import zipfile
 from datetime import datetime
 from pathlib import Path
 
@@ -180,8 +181,8 @@ def get_previous_tag() -> str:
     return "initial"
 
 
-def create_github_release(version: str, changelog: str, exe_path: str):
-    """Create a GitHub release with the built executable"""
+def create_github_release(version: str, changelog: str, asset_path: str):
+    """Create a GitHub release with the built asset (zip or exe)"""
     tag = f"v{version}"
 
     print(f"\nCreating GitHub release {tag}...")
@@ -221,7 +222,7 @@ def create_github_release(version: str, changelog: str, exe_path: str):
 
     cmd = [
         "gh", "release", "create", tag,
-        exe_path,
+        asset_path,
         "--title", f"Fansly & OnlyFans Downloader NG {tag}",
         "--notes", release_notes
     ]
@@ -232,7 +233,7 @@ def create_github_release(version: str, changelog: str, exe_path: str):
 
 
 def build_exe() -> str | None:
-    """Build the executable using PyInstaller"""
+    """Build the executable using PyInstaller (onedir mode)"""
     print("\n" + "=" * 60)
     print("Building executable...")
     print("=" * 60)
@@ -245,30 +246,32 @@ def build_exe() -> str | None:
         print("Cleaning old dist directory...")
         shutil.rmtree("dist")
 
+    app_name = "FanslyOFDownloaderNG"
+
     # PyInstaller configuration
     print("Running PyInstaller...")
     PyInstaller.__main__.run(
         [
             "fansly_downloader_gui.py",  # Entry point
-            "--name=FanslyOFDownloaderNG",  # Exe name (updated for both platforms)
-            "--onefile",  # Single exe file
+            f"--name={app_name}",
+            "--onedir",  # Directory bundle (allows post-install of packages)
             "--windowed",  # No console window
-            "--icon=resources/fansly_ng.ico",  # Application icon (file icon)
+            "--icon=resources/fansly_ng.ico",
             # Config files
-            "--add-data=config.sample.ini;.",  # Fansly sample config
-            "--add-data=onlyfans_config.ini;.",  # OF config template
+            "--add-data=config.sample.ini;.",
+            "--add-data=onlyfans_config.ini;.",
             # Icon file (for runtime taskbar icon)
-            "--add-data=resources/fansly_ng.ico;resources",  # Include icon in bundle
+            "--add-data=resources/fansly_ng.ico;resources",
             # Base packages
-            "--hidden-import=customtkinter",  # Ensure CTk included
-            "--hidden-import=PIL",  # Ensure Pillow included
-            "--hidden-import=plyvel",  # Ensure LevelDB included
-            "--hidden-import=requests",  # Ensure requests included
-            "--hidden-import=loguru",  # Ensure loguru included
-            "--hidden-import=rich",  # Ensure rich included
-            "--hidden-import=m3u8",  # Ensure m3u8 included
-            "--hidden-import=ImageHash",  # Ensure ImageHash included
-            # OnlyFans modules (NEW)
+            "--hidden-import=customtkinter",
+            "--hidden-import=PIL",
+            "--hidden-import=plyvel",
+            "--hidden-import=requests",
+            "--hidden-import=loguru",
+            "--hidden-import=rich",
+            "--hidden-import=m3u8",
+            "--hidden-import=ImageHash",
+            # OnlyFans modules
             "--hidden-import=api.onlyfans_api",
             "--hidden-import=api.onlyfans_auth",
             "--hidden-import=config.onlyfans_config",
@@ -278,7 +281,7 @@ def build_exe() -> str | None:
             "--hidden-import=gui.tabs.onlyfans_tab",
             "--hidden-import=gui.widgets.onlyfans_auth",
             "--hidden-import=gui.widgets.credential_help",
-            # Exclude heavy OCR/ML dependencies (optional, installed separately)
+            # Exclude heavy OCR/ML dependencies (installed on-demand via app)
             "--exclude-module=easyocr",
             "--exclude-module=torch",
             "--exclude-module=torchvision",
@@ -287,25 +290,50 @@ def build_exe() -> str | None:
             "--exclude-module=cv2",
             "--exclude-module=skimage",
             "--exclude-module=shapely",
-            "--clean",  # Clean cache
-            "--noconfirm",  # Overwrite without asking
+            "--clean",
+            "--noconfirm",
         ]
     )
 
-    exe_path = "dist/FanslyOFDownloaderNG.exe"
+    dist_dir = Path("dist") / app_name
+    exe_path = dist_dir / f"{app_name}.exe"
+
+    if not exe_path.exists():
+        print("⚠ Warning: Executable not found!")
+        print("=" * 60)
+        return None
+
+    # Create zip for distribution
+    zip_path = create_distribution_zip(dist_dir, app_name)
 
     print("\n" + "=" * 60)
     print("✓ Build complete!")
+    print(f"✓ App folder: {dist_dir}")
     print(f"✓ Executable: {exe_path}")
+    if zip_path:
+        size_mb = os.path.getsize(zip_path) / 1024 / 1024
+        print(f"✓ Distribution zip: {zip_path} ({size_mb:.1f} MB)")
+    print("=" * 60)
 
-    if os.path.exists(exe_path):
-        size_mb = os.path.getsize(exe_path) / 1024 / 1024
-        print(f"✓ Size: {size_mb:.1f} MB")
-        print("=" * 60)
-        return exe_path
-    else:
-        print("⚠ Warning: Executable not found!")
-        print("=" * 60)
+    return str(zip_path) if zip_path else str(exe_path)
+
+
+def create_distribution_zip(dist_dir: Path, app_name: str) -> Path | None:
+    """Create a zip file from the onedir build for GitHub release."""
+    zip_path = Path("dist") / f"{app_name}.zip"
+
+    print(f"\nCreating distribution zip: {zip_path}")
+
+    try:
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for file_path in dist_dir.rglob("*"):
+                if file_path.is_file():
+                    arcname = Path(app_name) / file_path.relative_to(dist_dir)
+                    zf.write(file_path, arcname)
+
+        return zip_path
+    except Exception as e:
+        print(f"⚠ Failed to create zip: {e}")
         return None
 
 
