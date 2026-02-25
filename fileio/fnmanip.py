@@ -68,7 +68,7 @@ def get_hash_for_image(filename: Path) -> str:
     file_hash = None
 
     with Image.open(filename) as img:
-        file_hash = str(imagehash.phash(img, hash_size = 16))
+        file_hash = str(imagehash.dhash(img, hash_size = 16))
 
     if file_hash is None:
         raise RuntimeError('add_hash_to_image: file_hash should not be "None"')

@@ -278,16 +278,17 @@ class EventHandlers:
         # Step 4: Extract usernames
         usernames = [acc['username'] for acc in accounts if 'username' in acc]
 
-        # Step 5: Add to creator list (avoiding duplicates)
+        # Step 5: Add to creator list (avoiding duplicates, case-insensitive)
         added = 0
         skipped = 0
 
-        existing_creators = set(self.state.all_creators)
+        existing_creators_lower = {c.lower() for c in self.state.all_creators}
 
         for username in usernames:
-            if username not in existing_creators:
+            if username.lower() not in existing_creators_lower:
                 self.state.all_creators.append(username)
                 self.state.selected_creators.add(username)  # Auto-select new imports
+                existing_creators_lower.add(username.lower())
                 added += 1
             else:
                 skipped += 1
@@ -551,16 +552,17 @@ class OnlyFansEventHandlers:
 
             offset += limit
 
-        # Add to creator list (avoiding duplicates)
+        # Add to creator list (avoiding duplicates, case-insensitive)
         added = 0
         skipped = 0
 
-        existing_creators = set(self.state.all_creators)
+        existing_creators_lower = {c.lower() for c in self.state.all_creators}
 
         for username in all_creators:
-            if username not in existing_creators:
+            if username.lower() not in existing_creators_lower:
                 self.state.all_creators.append(username)
                 self.state.selected_creators.add(username)  # Auto-select new imports
+                existing_creators_lower.add(username.lower())
                 added += 1
             else:
                 skipped += 1

@@ -60,7 +60,15 @@ class AppState:
             if self.gui_state_file.exists():
                 with open(self.gui_state_file, 'r', encoding='utf-8') as f:
                     state = json.load(f)
-                    self.all_creators = state.get("creators", [])
+                    loaded = state.get("creators", [])
+                    seen = set()
+                    deduped = []
+                    for name in loaded:
+                        key = name.lower()
+                        if key not in seen:
+                            seen.add(key)
+                            deduped.append(name)
+                    self.all_creators = deduped
                     self.selected_creators = set(state.get("selected", []))
                     print(f"Loaded {len(self.all_creators)} creators from GUI state")
         except Exception as ex:
@@ -130,7 +138,15 @@ class OnlyFansAppState:
             if self.gui_state_file.exists():
                 with open(self.gui_state_file, 'r', encoding='utf-8') as f:
                     state = json.load(f)
-                    self.all_creators = state.get("creators", [])
+                    loaded = state.get("creators", [])
+                    seen = set()
+                    deduped = []
+                    for name in loaded:
+                        key = name.lower()
+                        if key not in seen:
+                            seen.add(key)
+                            deduped.append(name)
+                    self.all_creators = deduped
                     self.selected_creators = set(state.get("selected", []))
         except Exception as ex:
             print(f"OF GUI state load error: {ex}")
