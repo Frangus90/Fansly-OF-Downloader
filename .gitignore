@@ -132,6 +132,7 @@ desktop.ini
 # CREDENTIALS / SENSITIVE DATA
 # ===================================================================
 
+watermark_blacklist.json
 *.key
 *.pem
 *.p12
