@@ -5,8 +5,8 @@ import os
 import platform
 import subprocess
 import sys
+import threading
 
-from functools import partialmethod
 from loguru import logger
 from pathlib import Path
 from time import sleep
@@ -16,6 +16,61 @@ LOG_FILE_NAME: str = 'fansly_downloader_ng.log'
 
 # GUI config reference for log routing
 _gui_config = None
+
+# Thread lock for dynamic level registration
+_level_lock = threading.Lock()
+_registered_levels: set[str] = set()
+
+# --- One-time loguru setup (module load) ---
+
+# Remove loguru's default stderr handler
+logger.remove()
+
+# Minimum level across all custom levels is 1 (Info), so set handler level to 1
+# to ensure all custom levels are captured.
+logger.add(
+    sys.stdout,
+    format="<level>{level}</level> | <white>{time:HH:mm}</white> <level>|</level><light-white>| {message}</light-white>",
+    level=1,
+)
+logger.add(
+    Path.cwd() / LOG_FILE_NAME,
+    encoding='utf-8',
+    format="[{level} ] [{time:YYYY-MM-DD} | {time:HH:mm}]: {message}",
+    level=1,
+    rotation='1MB',
+    retention=5,
+)
+
+# Register all known custom levels once
+_CUSTOM_LEVELS = [
+    (' Info', 1, '<light-blue>'),
+    (' ERROR', 2, '<red>'),
+    (' WARNING', 3, '<yellow>'),
+    (' lnfo', 4, '<light-red>'),
+    (' Config', 5, '<light-magenta>'),
+    (' Updater', 6, '<light-green>'),
+    (' DEBUG', 7, '<light-red>'),
+]
+
+for _name, _no, _color in _CUSTOM_LEVELS:
+    try:
+        logger.level(_name, no=_no, color=_color)
+        _registered_levels.add(_name)
+    except TypeError:
+        pass
+
+
+def _ensure_level(log_type: str, level: int, color: str) -> None:
+    """Register a dynamic log level if not already registered (thread-safe)."""
+    if log_type not in _registered_levels:
+        with _level_lock:
+            if log_type not in _registered_levels:
+                try:
+                    logger.level(log_type, no=level, color=color)
+                except TypeError:
+                    pass
+                _registered_levels.add(log_type)
 
 
 def set_gui_config(config):
@@ -28,38 +83,12 @@ def set_gui_config(config):
     _gui_config = config
 
 
-# most of the time, we utilize this to display colored output rather than logging or prints
 def output(level: int, log_type: str, color: str, message: str) -> None:
-    try:
-        logger.level(log_type, no = level, color = color)
-
-    except TypeError:
-        # level failsafe
-        pass 
-
-    logger.__class__.type = partialmethod(logger.__class__.log, log_type)
-
-    logger.remove()
-
-    logger.add(
-        sys.stdout,
-        format="<level>{level}</level> | <white>{time:HH:mm}</white> <level>|</level><light-white>| {message}</light-white>",
-        level=log_type,
-    )
-    logger.add(
-        Path.cwd() / LOG_FILE_NAME,
-        encoding='utf-8',
-        format="[{level} ] [{time:YYYY-MM-DD} | {time:HH:mm}]: {message}",
-        level=log_type,
-        rotation='1MB',
-        retention=5,
-    )
-
-    logger.type(message)
+    _ensure_level(log_type, level, color)
+    logger.log(log_type, message)
 
     # Route to GUI callback if available
     if _gui_config and _gui_config.gui_mode and _gui_config.log_callback:
-        # Map log_type to GUI level
         log_type_upper = log_type.strip().upper()
         if 'ERROR' in log_type_upper:
             gui_level = 'error'
@@ -70,8 +99,8 @@ def output(level: int, log_type: str, color: str, message: str) -> None:
 
         try:
             _gui_config.log_callback(message, gui_level)
-        except Exception:
-            pass  # Don't let GUI errors break logging
+        except Exception as ex:
+            print(f"GUI log callback error: {ex}", file=sys.stderr)
 
 
 def print_config(message: str) -> None:
@@ -130,18 +159,16 @@ def input_enter_continue(interactive: bool) -> None:
         sleep(3)
 
 
-# clear the terminal based on the operating system
 def clear_terminal() -> None:
     system = platform.system()
 
     if system == 'Windows':
         os.system('cls')
 
-    else: # Linux & macOS
+    else:
         os.system('clear')
 
 
-# cross-platform compatible, re-name downloaders terminal output window title
 def set_window_title(title) -> None:
     current_platform = platform.system()
 

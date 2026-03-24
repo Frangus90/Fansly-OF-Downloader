@@ -7,7 +7,6 @@
   </a>
   </div>
 
-
 A powerful, feature-rich tool for downloading content from Fansly and OnlyFans. Built with both GUI and CLI interfaces for maximum flexibility.
 
 ![Fansly Downloader NG Screenshot GUI](resources/python_THN03KTORt.png)
@@ -29,20 +28,20 @@ This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [F
 
 ## Features
 
-- **Dual-Platform Support** - Separate tabs for Fansly and OnlyFans with independent configurations
-- **Multiple Download Modes** - Timeline posts, messages, collections (Fansly), and single post downloads (both platforms)
-- **Single Post Download** - Download individual posts by URL or ID with automatic creator detection
-- **Modern GUI** - Dark theme interface with tabbed platform switching and real-time progress tracking
-- **Command-Line Support** - Full CLI for automation and advanced users (both platforms)
-- **Incremental Downloads** - Download only new content since last run
-- **Smart Deduplication** - Skip files you already have
-- **Cross-Platform** - Windows, Linux, and macOS support
-- **Automatic Retry Logic** - Handles rate limiting and connection issues
-- **M3U8 Support** - Download streaming videos automatically
-- **Bulk Image Cropping** - Built-in tool for batch image processing (works for both platforms)
-- **Watermark Auto-Crop** - Automatically detect and remove watermarks using OCR with one-click GPU-accelerated EasyOCR install
-- **Bulk Processing** - Easily update prior download folders
-- **Customizable** - Separate media into sub-folders, download previews, and more
+* **Dual-Platform Support** - Separate tabs for Fansly and OnlyFans with independent configurations
+* **Multiple Download Modes** - Timeline posts, messages, collections (Fansly), and single post downloads (both platforms)
+* **Single Post Download** - Download individual posts by URL or ID with automatic creator detection
+* **Modern GUI** - Dark theme interface with tabbed platform switching and real-time progress tracking
+* **Command-Line Support** - Full CLI for automation and advanced users (both platforms)
+* **Incremental Downloads** - Download only new content since last run
+* **Smart Deduplication** - Skip files you already have
+* **Cross-Platform** - Windows, Linux, and macOS support
+* **Automatic Retry Logic** - Handles rate limiting and connection issues
+* **M3U8 Support** - Download streaming videos automatically
+* **Bulk Image Cropping** - Built-in tool for batch image processing (works for both platforms)
+* **Watermark Auto-Crop** - Automatically detect and remove watermarks using OCR with one-click GPU-accelerated EasyOCR install
+* **Bulk Processing** - Easily update prior download folders
+* **Customizable** - Separate media into sub-folders, download previews, and more
 
 For detailed configuration settings, see the [Wiki](https://github.com/Frangus90/fansly-downloader-ng/wiki/Explanation-of-provided-programs-&-their-functionality#explanation-of-configini).
 
@@ -63,14 +62,19 @@ For detailed configuration settings, see the [Wiki](https://github.com/Frangus90
 
 1. Clone or download this repository
 2. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
+
 3. Run the GUI:
+
    ```bash
    python fansly_downloader_gui.py
    ```
+
    Or use the CLI:
+
    ```bash
    python fansly_downloader_ng.py
    ```
@@ -78,6 +82,7 @@ For detailed configuration settings, see the [Wiki](https://github.com/Frangus90
 **Note:** Using a [Python virtual environment](https://docs.python.org/3/library/venv.html) is recommended but out-of-scope of this guide.
 
 On Linux, you may need to install Tkinter separately:
+
 ```bash
 sudo apt-get install python3-tk
 ```
@@ -113,53 +118,54 @@ python onlyfans_downloader.py -i
 
 ## GUI Features
 
-- **Dual-Platform Tabs** - Separate Fansly and OnlyFans tabs with independent configurations
-- **Setup Wizard** - Automatic configuration on first run (Fansly)
-- **Creator Management** - Visual list to add/remove creators (both platforms)
-- **Subscription Import** - Import all subscribed creators automatically (both platforms)
-- **Download Mode Selection** - Choose Timeline or Single Post mode (both platforms)
-- **Single Post Download** - Enter post URL or ID to download individual posts
-- **Real-time Progress** - See downloads in progress with file counts
-- **Connection Testing** - Verify credentials before downloading
-- **Log Access** - Press Ctrl+L to view diagnostic logs
-- **Incremental Mode** - Toggle to download only new content
-- **Image Crop Tool** - Built-in bulk image cropping with drag-and-drop support (works for all downloads)
-- **Watermark Auto-Crop Tool** - OCR-based watermark detection and removal with GPU acceleration
+* **Dual-Platform Tabs** - Separate Fansly and OnlyFans tabs with independent configurations
+* **Setup Wizard** - Automatic configuration on first run (Fansly)
+* **Creator Management** - Visual list to add/remove creators (both platforms)
+* **Subscription Import** - Import all subscribed creators automatically (both platforms)
+* **Download Mode Selection** - Choose Timeline or Single Post mode (both platforms)
+* **Single Post Download** - Enter post URL or ID to download individual posts
+* **Real-time Progress** - See downloads in progress with file counts
+* **Connection Testing** - Verify credentials before downloading
+* **Log Access** - Press Ctrl+L to view diagnostic logs
+* **Incremental Mode** - Toggle to download only new content
+* **Image Crop Tool** - Built-in bulk image cropping with drag-and-drop support (works for all downloads)
+* **Watermark Auto-Crop Tool** - OCR-based watermark detection and removal with GPU acceleration
 
 ### Image Crop Tool
 
 The built-in Image Crop Tool allows you to batch process and crop downloaded images:
 
 **Features:**
-- **Bulk Processing** - Process multiple images with individual settings
-- **Drag & Drop** - Add images by dragging onto window
-- **Custom Aspect Ratios** - Presets (1:1, 16:9, 4:5) or custom values
-- **Crop Alignment** - Position crops (center, top, bottom, left, right)
-- **Live Preview** - Interactive canvas with real-time preview
-- **Format Options** - Export as JPEG, PNG, WebP, or AVIF (optional)
-- **Batch Export** - Process entire queue with one click
+* **Bulk Processing** - Process multiple images with individual settings
+* **Drag & Drop** - Add images by dragging onto window
+* **Custom Aspect Ratios** - Presets (1:1, 16:9, 4:5) or custom values
+* **Crop Alignment** - Position crops (center, top, bottom, left, right)
+* **Live Preview** - Interactive canvas with real-time preview
+* **Format Options** - Export as JPEG, PNG, WebP, or AVIF (optional)
+* **Batch Export** - Process entire queue with one click
 
 **Compression Preview:**
-- **Real-time File Size** - See compressed size as you adjust settings
-- **Before/After Comparison** - Slider to compare original vs compressed
-- **Zoom & Pan** - Scroll to zoom, right-click drag to pan
-- **SSIM Score** - Color-coded quality indicator (green/yellow/red)
-- **Smart Format Detection** - Warns for lossless formats (PNG)
+* **Real-time File Size** - See compressed size as you adjust settings
+* **Before/After Comparison** - Slider to compare original vs compressed
+* **Zoom & Pan** - Scroll to zoom, right-click drag to pan
+* **SSIM Score** - Color-coded quality indicator (green/yellow/red)
+* **Smart Format Detection** - Warns for lossless formats (PNG)
 
 **Compression Modes:**
-- **Quick Mode** - Set target file size, auto-selects best format (JPEG > WebP > AVIF)
-- **Advanced Mode** - Full manual control with detailed settings
+* **Quick Mode** - Set target file size, auto-selects best format (JPEG > WebP > AVIF)
+* **Advanced Mode** - Full manual control with detailed settings
 
 **Advanced Options:**
-- **Target File Size** - Compress to specific size while maximizing quality
-- **MozJPEG** - 10-15% smaller files at same visual quality
-- **SSIM Validation** - Warns when quality drops below threshold
-- **Chroma Subsampling** - 4:4:4 (quality), 4:2:2 (balanced), 4:2:0 (smallest)
-- **Quality Floor** - Prevent over-compression (60-90 range)
-- **Progressive JPEG** - Better web loading
-- **AVIF Support** - Next-gen compression (optional)
+* **Target File Size** - Compress to specific size while maximizing quality
+* **MozJPEG** - 10-15% smaller files at same visual quality
+* **SSIM Validation** - Warns when quality drops below threshold
+* **Chroma Subsampling** - 4:4:4 (quality), 4:2:2 (balanced), 4:2:0 (smallest)
+* **Quality Floor** - Prevent over-compression (60-90 range)
+* **Progressive JPEG** - Better web loading
+* **AVIF Support** - Next-gen compression (optional)
 
 **Usage:**
+
 1. Open Tools → Image Crop Tool
 2. Add images (upload or drag-and-drop)
 3. **Crop Preview** tab - Adjust crop box per image
@@ -172,13 +178,14 @@ The built-in Image Crop Tool allows you to batch process and crop downloaded ima
 Automatically detect and remove text watermarks from images using OCR:
 
 **Features:**
-- **OCR-Based Detection** - Finds watermark text anywhere in the image
-- **Blacklist Matching** - Only crop regions containing your specified words (e.g. creator username)
-- **Crop All Mode** - Remove all detected text regions without a blacklist
-- **Batch Scanning** - Scan entire folders at once
-- **GPU Acceleration** - Uses NVIDIA GPU via CUDA for fast OCR when available
+* **OCR-Based Detection** - Finds watermark text anywhere in the image
+* **Blacklist Matching** - Only crop regions containing your specified words (e.g. creator username)
+* **Crop All Mode** - Remove all detected text regions without a blacklist
+* **Batch Scanning** - Scan entire folders at once
+* **GPU Acceleration** - Uses NVIDIA GPU via CUDA for fast OCR when available
 
 **EasyOCR Installation:**
+
 1. Open Tools → Watermark Auto-Crop
 2. Click **Install EasyOCR** - the app auto-detects your GPU
 3. Confirm the download (~1.5 GB CPU / ~3 GB GPU)
@@ -247,23 +254,23 @@ The application uses separate configuration files for each platform:
 
 Created automatically on first run for Fansly. Customize:
 
-- Download directory
-- Download modes (timeline, messages, collections)
-- Rate limiting delays
-- Duplicate handling
-- Incremental mode settings
-- Debug logging
+* Download directory
+* Download modes (timeline, messages, collections)
+* Rate limiting delays
+* Duplicate handling
+* Incremental mode settings
+* Debug logging
 
 ### OnlyFans Configuration (`onlyfans_config.ini`)
 
 Created automatically when using OnlyFans features. Completely independent from Fansly settings:
 
-- Download directory
-- OnlyFans credentials (sess, auth_id, user_agent, x-bc)
-- Creator list
-- Rate limiting and retry settings
-- Incremental mode settings
-- Post limit for new creators
+* Download directory
+* OnlyFans credentials (sess, auth_id, user_agent, x-bc)
+* Creator list
+* Rate limiting and retry settings
+* Incremental mode settings
+* Post limit for new creators
 
 **Note:** Both platforms maintain separate download histories and states, allowing you to use both simultaneously without conflicts.
 
@@ -304,24 +311,24 @@ pip install -r requirements-dev.txt
 ## Troubleshooting
 
 **Empty fields after setup wizard:**
-- Check `fansly_downloader.log` (Ctrl+L in GUI)
-- Ensure complete token/user agent pasted
-- Re-run setup wizard
+* Check `fansly_downloader.log` (Ctrl+L in GUI)
+* Ensure complete token/user agent pasted
+* Re-run setup wizard
 
 **Downloads failing:**
-- Test connection using "Test Connection" button
-- Verify download path exists and writable
-- Check log file for errors
-- Ensure active creator subscriptions
+* Test connection using "Test Connection" button
+* Verify download path exists and writable
+* Check log file for errors
+* Ensure active creator subscriptions
 
 **Application crashes:**
-- Check `fansly_downloader.log` in app directory
-- Delete `config.ini` and `gui_state.json` for fresh setup
-- Ensure Python 3.11+ if running from source
+* Check `fansly_downloader.log` in app directory
+* Delete `config.ini` and `gui_state.json` for fresh setup
+* Ensure Python 3.11+ if running from source
 
 **Log file location:**
-- Same directory as executable/script
-- Named `fansly_downloader.log` (GUI) or `fansly_downloader_ng.log` (CLI)
+* Same directory as executable/script
+* Named `fansly_downloader.log` (GUI) or `fansly_downloader_ng.log` (CLI)
 
 ## FAQ
 
@@ -356,7 +363,7 @@ Contributions are welcome! Please open a pull request with your changes.
 
 ### Special Thanks
 
-- **[@Avnsx](https://github.com/Avnsx)** - Original Fansly Downloader
+* **[@Avnsx](https://github.com/Avnsx)** - Original Fansly Downloader
 
 ## License
 
