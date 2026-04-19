@@ -28,8 +28,8 @@ class MainWindow(ctk.CTk):
 
         # Window properties
         self.title("Fansly & OnlyFans Downloader NG v0.9.9")
-        self.geometry("900x1000")
-        self.minsize(1000, 700)
+        self.geometry("1280x900")
+        self.minsize(1000, 600)
 
         # Set window icon (taskbar and title bar)
         self._set_window_icon()
@@ -114,7 +114,7 @@ class MainWindow(ctk.CTk):
         self.handlers = EventHandlers(self.app_state, self)
 
         # Create tabbed interface
-        self.tab_view = ctk.CTkTabview(self, width=880)
+        self.tab_view = ctk.CTkTabview(self)
         self.tab_view.pack(fill="both", expand=True, padx=10, pady=(10, 0))
 
         # Add tabs
@@ -228,8 +228,7 @@ class MainWindow(ctk.CTk):
             if self.of_sections is not None and "status" in self.of_sections and "log_button" in self.of_sections["status"]:
                 self.of_sections["status"]["log_button"].configure(text="Show Log")
         else:
-            self.log_window.deiconify()
-            self.log_window.lift()
+            self.log_window.show()
 
             # Clear unread badge counts for both handlers
             self.handlers.unread_warnings = 0

@@ -2,6 +2,19 @@
 
 ## 🗒️ Release Notes
 
+### 1.8.5
+
+**Bug Fixes:**
+- **UI sizing on smaller monitors** - Start Download / Stop buttons, "Single Post" radio, and "Import Subs" button no longer clip off-screen on 1080p and lower resolutions
+  - Settings content now scrolls when the window is too short; Start/Stop and the status bar are pinned as a fixed footer so they're always reachable
+  - Fixed inconsistent default geometry (`900x1000` vs `minsize 1000x700`); default is now `1280x900`, min `1000x600`
+  - Removed a fixed inner tabview width that was squeezing the columns below the minimum
+- **Console log window failing to open** - "Show Log" now reliably displays the log window on the first click
+  - Fixed logic that hid the window immediately after creating it when the previous session had left it visible
+  - Saved log window positions are now clamped to the current screen; windows left on a disconnected/smaller monitor no longer open off-screen
+  - Window is now forced to the front on open (Windows z-order fix)
+  - Prevented a crash in the log badge updater when log messages arrived before the window had been opened
+
 ### 1.8.1
 
 **Watermark Auto-Crop Tool:**

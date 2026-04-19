@@ -28,19 +28,14 @@ class LogWindow(ctk.CTkToplevel):
         if not self.settings:
             self.settings = get_default_settings(parent)
 
-        # Apply saved size and position
+        # Apply saved size and position, clamped to the visible screen so the
+        # window can't open off-screen (e.g., after switching monitors).
         width = self.settings.get("window_width", 800)
         height = self.settings.get("window_height", 400)
         x = self.settings.get("window_x", 100)
         y = self.settings.get("window_y", 100)
 
-        # Validate position is on screen
-        if x < 0 or y < 0 or x > 3000 or y > 3000:
-            # Position seems invalid (e.g., disconnected monitor)
-            defaults = get_default_settings(parent)
-            x = defaults["window_x"]
-            y = defaults["window_y"]
-
+        width, height, x, y = self._clamp_geometry_to_screen(parent, width, height, x, y)
         self.geometry(f"{width}x{height}+{x}+{y}")
 
         # Apply always on top preference
@@ -57,10 +52,48 @@ class LogWindow(ctk.CTkToplevel):
         # Save position/size when window is moved or resized
         self.bind("<Configure>", self._on_configure)
 
-        # Start hidden by default
-        is_visible = self.settings.get("is_visible", False)
-        if not is_visible:
-            self.withdraw()
+        # Always start hidden; toggle_log_window() is the sole entry point for
+        # showing the window, so it needs a predictable initial state.
+        self.withdraw()
+
+    def _clamp_geometry_to_screen(self, parent, width, height, x, y):
+        """Clamp requested geometry so the window is visible on the primary screen."""
+        try:
+            screen_w = parent.winfo_screenwidth()
+            screen_h = parent.winfo_screenheight()
+        except Exception:
+            return width, height, x, y
+
+        min_w, min_h = 600, 300
+        width = max(min_w, min(width, screen_w))
+        height = max(min_h, min(height, screen_h))
+
+        # Require a strip of title bar to remain visible so the user can grab
+        # it. If the saved position puts the window off-screen, reset to the
+        # centered default.
+        margin = 40
+        off_right = x > screen_w - margin
+        off_left = x + width < margin
+        off_bottom = y > screen_h - margin
+        off_top = y < 0
+        if off_right or off_left or off_bottom or off_top:
+            defaults = get_default_settings(parent)
+            x, y = defaults["window_x"], defaults["window_y"]
+
+        x = max(0, min(x, screen_w - margin))
+        y = max(0, min(y, screen_h - margin))
+        return width, height, x, y
+
+    def show(self):
+        """Show the log window and bring it to the front reliably on Windows."""
+        self.deiconify()
+        self.lift()
+        # Transient topmost flip forces the window above the main app on Windows
+        # without making it permanently topmost.
+        if not self.settings.get("always_on_top", False):
+            self.attributes('-topmost', True)
+            self.after(150, lambda: self.attributes('-topmost', False))
+        self.focus_force()
 
     def _build_ui(self, always_on_top_initial: bool):
         """Build log window UI"""

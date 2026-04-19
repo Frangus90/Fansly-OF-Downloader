@@ -193,7 +193,8 @@ class EventHandlers:
         if not log_button:
             return
 
-        is_visible = self.window.log_window.winfo_viewable()
+        log_window = getattr(self.window, "log_window", None)
+        is_visible = bool(log_window and log_window.winfo_viewable())
         update_log_button_badge(log_button, self.unread_warnings, self.unread_errors, is_visible)
 
     def on_close(self):
@@ -463,7 +464,8 @@ class OnlyFansEventHandlers:
         if not log_button:
             return
 
-        is_visible = self.window.log_window.winfo_viewable()
+        log_window = getattr(self.window, "log_window", None)
+        is_visible = bool(log_window and log_window.winfo_viewable())
         update_log_button_badge(log_button, self.unread_warnings, self.unread_errors, is_visible)
 
     def on_open_crop_tool(self):

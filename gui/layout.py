@@ -21,32 +21,38 @@ def build_layout(parent, state, handlers, toggle_log_callback=None, check_update
     left_frame = ctk.CTkFrame(main_frame)
     left_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
 
-    # Auth section (left)
-    from gui.widgets.auth_section import AuthSection
-
-    sections["auth"] = AuthSection(left_frame, state.config)
-    sections["auth"].pack(fill="x", padx=10, pady=5)
-
-    # Settings section (left)
-    from gui.widgets.settings_section import SettingsSection
-
-    sections["settings"] = SettingsSection(left_frame, state.config)
-    sections["settings"].pack(fill="x", padx=10, pady=5)
-
-    # Tools section (left)
-    sections["tools"] = build_tools_section(left_frame, handlers)
-
-    # Progress section (left)
-    from gui.widgets.progress_section import ProgressSection
-
-    sections["progress"] = ProgressSection(left_frame)
-    sections["progress"].pack(fill="x", padx=10, pady=5)
-
-    # Control buttons (left)
+    # Pack the fixed footer (status bar + control buttons) FIRST with side="bottom"
+    # so they are always visible at the bottom regardless of window height.
+    # Status bar sits at the very bottom; buttons sit just above it.
+    sections["status"] = build_status_bar(left_frame, toggle_log_callback, check_update_callback)
     sections["buttons"] = build_control_buttons(left_frame, handlers)
 
-    # Status bar (left) - includes log toggle button and update button
-    sections["status"] = build_status_bar(left_frame, toggle_log_callback, check_update_callback)
+    # Scrollable content area fills the remaining space above the footer.
+    # When the window is too short to show all sections, users can scroll.
+    scroll_container = ctk.CTkScrollableFrame(left_frame, fg_color="transparent")
+    scroll_container.pack(side="top", fill="both", expand=True, padx=0, pady=0)
+    sections["scroll_container"] = scroll_container
+
+    # Auth section (inside scrollable area)
+    from gui.widgets.auth_section import AuthSection
+
+    sections["auth"] = AuthSection(scroll_container, state.config)
+    sections["auth"].pack(fill="x", padx=10, pady=5)
+
+    # Settings section (inside scrollable area)
+    from gui.widgets.settings_section import SettingsSection
+
+    sections["settings"] = SettingsSection(scroll_container, state.config)
+    sections["settings"].pack(fill="x", padx=10, pady=5)
+
+    # Tools section (inside scrollable area)
+    sections["tools"] = build_tools_section(scroll_container, handlers)
+
+    # Progress section (inside scrollable area)
+    from gui.widgets.progress_section import ProgressSection
+
+    sections["progress"] = ProgressSection(scroll_container)
+    sections["progress"].pack(fill="x", padx=10, pady=5)
 
     # RIGHT COLUMN FRAME
     right_frame = ctk.CTkFrame(main_frame)
@@ -67,9 +73,9 @@ def build_layout(parent, state, handlers, toggle_log_callback=None, check_update
 
 
 def build_control_buttons(parent, handlers):
-    """Build start/stop buttons"""
+    """Build start/stop buttons (packed at bottom of parent as fixed footer)"""
     button_frame = ctk.CTkFrame(parent)
-    button_frame.pack(fill="x", padx=10, pady=10)
+    button_frame.pack(side="bottom", fill="x", padx=10, pady=10)
 
     start_btn = ctk.CTkButton(
         button_frame,
@@ -96,9 +102,9 @@ def build_control_buttons(parent, handlers):
 
 
 def build_status_bar(parent, toggle_log_callback=None, check_update_callback=None):
-    """Build status bar with log toggle button and check for update button"""
+    """Build status bar with log toggle and update buttons (packed at bottom as fixed footer)"""
     status_frame = ctk.CTkFrame(parent)
-    status_frame.pack(fill="x", padx=10, pady=(5, 10))
+    status_frame.pack(side="bottom", fill="x", padx=10, pady=(5, 10))
 
     # Status label (left)
     status_label = ctk.CTkLabel(

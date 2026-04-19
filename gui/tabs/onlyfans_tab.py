@@ -12,9 +12,9 @@ def build_onlyfans_layout(parent, state, handlers, toggle_log_callback=None, che
     main_frame = ctk.CTkFrame(parent)
     main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # Configure 2-column grid (70/30 split)
-    main_frame.grid_columnconfigure(0, weight=7)
-    main_frame.grid_columnconfigure(1, weight=3)
+    # Configure 2-column grid (70/30 split) with minimum widths to match Fansly tab
+    main_frame.grid_columnconfigure(0, weight=7, minsize=480)
+    main_frame.grid_columnconfigure(1, weight=3, minsize=420)
     main_frame.grid_rowconfigure(0, weight=1)
 
     sections = {}
@@ -23,29 +23,33 @@ def build_onlyfans_layout(parent, state, handlers, toggle_log_callback=None, che
     left_frame = ctk.CTkFrame(main_frame)
     left_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
 
+    # Pack fixed footer (status + buttons) first with side="bottom" so they
+    # remain visible at the bottom of the window regardless of height.
+    sections["status"] = build_of_status_bar(left_frame, toggle_log_callback, check_update_callback)
+    sections["buttons"] = build_of_control_buttons(left_frame, handlers)
+
+    # Scrollable content fills remaining space above the footer
+    scroll_container = ctk.CTkScrollableFrame(left_frame, fg_color="transparent")
+    scroll_container.pack(side="top", fill="both", expand=True, padx=0, pady=0)
+    sections["scroll_container"] = scroll_container
+
     # OF Auth section
     from gui.widgets.onlyfans_auth import OnlyFansAuthSection
-    sections["auth"] = OnlyFansAuthSection(left_frame, state.config)
+    sections["auth"] = OnlyFansAuthSection(scroll_container, state.config)
     sections["auth"].pack(fill="x", padx=10, pady=5)
 
     # Settings (OF-specific - simplified)
     from gui.widgets.onlyfans_settings_section import OnlyFansSettingsSection
-    sections["settings"] = OnlyFansSettingsSection(left_frame, state.config)
+    sections["settings"] = OnlyFansSettingsSection(scroll_container, state.config)
     sections["settings"].pack(fill="x", padx=10, pady=5)
 
     # Tools section (reuse - includes Image Crop Tool)
-    sections["tools"] = build_tools_section(left_frame, handlers)
+    sections["tools"] = build_tools_section(scroll_container, handlers)
 
     # Progress section (reuse)
     from gui.widgets.progress_section import ProgressSection
-    sections["progress"] = ProgressSection(left_frame)
+    sections["progress"] = ProgressSection(scroll_container)
     sections["progress"].pack(fill="x", padx=10, pady=5)
-
-    # Control buttons
-    sections["buttons"] = build_of_control_buttons(left_frame, handlers)
-
-    # Status bar (includes log toggle button and update button)
-    sections["status"] = build_of_status_bar(left_frame, toggle_log_callback, check_update_callback)
 
     # RIGHT COLUMN
     right_frame = ctk.CTkFrame(main_frame)
@@ -65,9 +69,9 @@ def build_onlyfans_layout(parent, state, handlers, toggle_log_callback=None, che
 
 
 def build_of_control_buttons(parent, handlers):
-    """Build OF start/stop buttons"""
+    """Build OF start/stop buttons (packed at bottom of parent as fixed footer)"""
     button_frame = ctk.CTkFrame(parent)
-    button_frame.pack(fill="x", padx=10, pady=10)
+    button_frame.pack(side="bottom", fill="x", padx=10, pady=10)
 
     start_btn = ctk.CTkButton(
         button_frame,
@@ -94,9 +98,9 @@ def build_of_control_buttons(parent, handlers):
 
 
 def build_of_status_bar(parent, toggle_log_callback=None, check_update_callback=None):
-    """Build OF status bar with log toggle button and check for update button"""
+    """Build OF status bar with log toggle and update buttons (packed at bottom as fixed footer)"""
     status_frame = ctk.CTkFrame(parent)
-    status_frame.pack(fill="x", padx=10, pady=(5, 10))
+    status_frame.pack(side="bottom", fill="x", padx=10, pady=(5, 10))
 
     # Status label (left)
     status_label = ctk.CTkLabel(
