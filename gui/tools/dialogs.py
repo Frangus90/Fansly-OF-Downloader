@@ -116,14 +116,17 @@ class CTkDialog(ctk.CTkToplevel):
         parent_h = parent.winfo_height()
 
         # Get dialog size
-        dialog_w = self.winfo_width()
-        dialog_h = self.winfo_height()
+        # Use requested size (from content) so the dialog doesn't render at
+        # Tk's tiny default before layout settles. Fall back to actual size if
+        # it happens to be larger.
+        dialog_w = max(self.winfo_reqwidth(), self.winfo_width())
+        dialog_h = max(self.winfo_reqheight(), self.winfo_height())
 
         # Calculate position
         x = parent_x + (parent_w - dialog_w) // 2
         y = parent_y + (parent_h - dialog_h) // 2
 
-        self.geometry(f"+{x}+{y}")
+        self.geometry(f"{dialog_w}x{dialog_h}+{x}+{y}")
 
     def _on_button_click(self, button_text: str):
         """Handle button click"""
@@ -263,11 +266,14 @@ class CTkInputDialog(ctk.CTkToplevel):
         parent_y = parent.winfo_rooty()
         parent_w = parent.winfo_width()
         parent_h = parent.winfo_height()
-        dialog_w = self.winfo_width()
-        dialog_h = self.winfo_height()
+        # Use requested size (from content) so the dialog doesn't render at
+        # Tk's tiny default before layout settles. Fall back to actual size if
+        # it happens to be larger.
+        dialog_w = max(self.winfo_reqwidth(), self.winfo_width())
+        dialog_h = max(self.winfo_reqheight(), self.winfo_height())
         x = parent_x + (parent_w - dialog_w) // 2
         y = parent_y + (parent_h - dialog_h) // 2
-        self.geometry(f"+{x}+{y}")
+        self.geometry(f"{dialog_w}x{dialog_h}+{x}+{y}")
 
     def _on_ok(self):
         """Handle OK button"""
@@ -436,11 +442,14 @@ class CTkPresetSaveDialog(ctk.CTkToplevel):
         parent_y = parent.winfo_rooty()
         parent_w = parent.winfo_width()
         parent_h = parent.winfo_height()
-        dialog_w = self.winfo_width()
-        dialog_h = self.winfo_height()
+        # Use requested size (from content) so the dialog doesn't render at
+        # Tk's tiny default before layout settles. Fall back to actual size if
+        # it happens to be larger.
+        dialog_w = max(self.winfo_reqwidth(), self.winfo_width())
+        dialog_h = max(self.winfo_reqheight(), self.winfo_height())
         x = parent_x + (parent_w - dialog_w) // 2
         y = parent_y + (parent_h - dialog_h) // 2
-        self.geometry(f"+{x}+{y}")
+        self.geometry(f"{dialog_w}x{dialog_h}+{x}+{y}")
 
     def _on_ok(self):
         """Handle OK button"""
@@ -687,11 +696,14 @@ class CTkCompressionWarningDialog(ctk.CTkToplevel):
         parent_y = parent.winfo_rooty()
         parent_w = parent.winfo_width()
         parent_h = parent.winfo_height()
-        dialog_w = self.winfo_width()
-        dialog_h = self.winfo_height()
+        # Use requested size (from content) so the dialog doesn't render at
+        # Tk's tiny default before layout settles. Fall back to actual size if
+        # it happens to be larger.
+        dialog_w = max(self.winfo_reqwidth(), self.winfo_width())
+        dialog_h = max(self.winfo_reqheight(), self.winfo_height())
         x = parent_x + (parent_w - dialog_w) // 2
         y = parent_y + (parent_h - dialog_h) // 2
-        self.geometry(f"+{x}+{y}")
+        self.geometry(f"{dialog_w}x{dialog_h}+{x}+{y}")
 
     def _on_choice(self, choice: str):
         """Handle choice"""
@@ -987,11 +999,14 @@ class CTkCompressionFallbackDialog(ctk.CTkToplevel):
         parent_y = parent.winfo_rooty()
         parent_w = parent.winfo_width()
         parent_h = parent.winfo_height()
-        dialog_w = self.winfo_width()
-        dialog_h = self.winfo_height()
+        # Use requested size (from content) so the dialog doesn't render at
+        # Tk's tiny default before layout settles. Fall back to actual size if
+        # it happens to be larger.
+        dialog_w = max(self.winfo_reqwidth(), self.winfo_width())
+        dialog_h = max(self.winfo_reqheight(), self.winfo_height())
         x = parent_x + (parent_w - dialog_w) // 2
         y = parent_y + (parent_h - dialog_h) // 2
-        self.geometry(f"+{x}+{y}")
+        self.geometry(f"{dialog_w}x{dialog_h}+{x}+{y}")
 
     def _on_choice(self, choice: str):
         """Handle option selection."""

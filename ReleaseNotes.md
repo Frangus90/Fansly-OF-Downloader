@@ -5,6 +5,7 @@
 ### 1.8.5
 
 **Bug Fixes:**
+
 - **UI sizing on smaller monitors** - Start Download / Stop buttons, "Single Post" radio, and "Import Subs" button no longer clip off-screen on 1080p and lower resolutions
   - Settings content now scrolls when the window is too short; Start/Stop and the status bar are pinned as a fixed footer so they're always reachable
   - Fixed inconsistent default geometry (`900x1000` vs `minsize 1000x700`); default is now `1280x900`, min `1000x600`
@@ -14,10 +15,13 @@
   - Saved log window positions are now clamped to the current screen; windows left on a disconnected/smaller monitor no longer open off-screen
   - Window is now forced to the front on open (Windows z-order fix)
   - Prevented a crash in the log badge updater when log messages arrived before the window had been opened
+- **Confirmation/warning popups rendering at tiny size** - Dialogs like "Process Batch?", overwrite/skip prompts, preset save, and compression warnings were clipping their title, message, and buttons
+  - Dialogs now size themselves from the content's requested size instead of Tk's pre-layout default, so text, paths, and buttons no longer get cut off
 
 ### 1.8.1
 
 **Watermark Auto-Crop Tool:**
+
 - **One-Click EasyOCR Install** - Install EasyOCR directly from the app with a single button click, no terminal required
 - **Automatic GPU Detection** - Detects NVIDIA GPU and installs the correct CUDA-accelerated PyTorch version automatically (CUDA 11.8, 12.1, 12.4, 12.6, 12.8 supported)
 - **CPU Fallback** - Automatically falls back to CPU-only PyTorch if no compatible NVIDIA GPU is detected
@@ -29,6 +33,7 @@
 ### 1.6.1
 
 **Bug Fixes:**
+
 - Fixed crash when GitHub release tag has unexpected format during update check
 - Fixed potential crash when extracting post ID from malformed Fansly URLs
 - Fixed timeline cursor navigation accessing unvalidated array index
@@ -40,6 +45,7 @@
 ### 1.6.0
 
 **OnlyFans Messages Support:**
+
 - **Message Downloads** - Download media from OnlyFans direct messages
   - Messages-only mode for downloading DMs without timeline posts
   - Normal mode downloads both timeline and messages
@@ -52,6 +58,7 @@
   - Better handling of paywall-locked content with clear warnings
 
 **GUI Performance Improvements:**
+
 - **Startup Optimization** - Significantly faster application startup
   - Lazy loading for OnlyFans tab (builds on first access)
   - Lazy loading for log window (creates on first show)
@@ -74,6 +81,7 @@
 ### 1.5.0 2026-01-03
 
 **New Features:**
+
 - **Single Post Download** - Download individual posts by URL or ID (both platforms)
   - GUI integration with dedicated input field and mode selection
   - Auto-detects creator from post - creates correct folder automatically
@@ -94,6 +102,7 @@
   - **Progressive JPEG** - Option for better web loading experience
 
 **Improvements:**
+
 - Removed plyvel-ci dependency for easier installation (auto-token extraction now optional)
 
 ### Historical Releases
