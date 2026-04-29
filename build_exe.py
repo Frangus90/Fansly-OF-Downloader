@@ -164,6 +164,35 @@ def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProce
     return result
 
 
+def get_current_branch() -> str:
+    """Return the current git branch name."""
+    result = run_command(["git", "branch", "--show-current"])
+    branch = result.stdout.strip()
+    if not branch:
+        raise RuntimeError("Cannot create a release from detached HEAD")
+    return branch
+
+
+def has_upstream_branch() -> bool:
+    """Check whether the current branch has an upstream configured."""
+    result = run_command(
+        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def push_current_branch():
+    """Push the current branch, setting origin as upstream when needed."""
+    branch = get_current_branch()
+    if has_upstream_branch():
+        run_command(["git", "push"])
+        return
+
+    print(f"  No upstream configured for {branch}; setting origin/{branch}")
+    run_command(["git", "push", "--set-upstream", "origin", branch])
+
+
 def check_gh_cli() -> bool:
     """Check if GitHub CLI is installed and authenticated"""
     try:
@@ -212,7 +241,7 @@ def create_github_release(version: str, changelog: str, asset_path: str):
 
     # Push changes and tag
     print("\nPushing to remote...")
-    run_command(["git", "push"])
+    push_current_branch()
     run_command(["git", "push", "origin", tag])
 
     # Create GitHub release with executable
@@ -270,7 +299,7 @@ def build_exe() -> str | None:
             "--hidden-import=loguru",
             "--hidden-import=rich",
             "--hidden-import=m3u8",
-            "--hidden-import=ImageHash",
+            "--hidden-import=imagehash",
             # OnlyFans modules
             "--hidden-import=api.onlyfans_api",
             "--hidden-import=api.onlyfans_auth",
