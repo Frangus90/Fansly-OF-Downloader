@@ -7,12 +7,12 @@
   </a>
   </div>
 
-A powerful, feature-rich tool for downloading content from Fansly and OnlyFans. Built with both GUI and CLI interfaces for maximum flexibility.
+A downloader-focused tool for saving content from Fansly and OnlyFans. Built with both GUI and CLI interfaces for flexible interactive or automated use.
 
 ![Fansly Downloader NG Screenshot GUI](resources/python_THN03KTORt.png)
 ![OF Downloader NG Screenshot GUI](resources/python_lcSK3Te4hd.png)
 
-This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [Fansly Downloader](https://github.com/Avnsx/fansly-downloader), expanded to support both Fansly and OnlyFans. **Fansly & OnlyFans Downloader NG** supports new features:
+This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [Fansly Downloader](https://github.com/Avnsx/fansly-downloader), expanded to support both Fansly and OnlyFans. **Fansly & OnlyFans Downloader NG** supports:
 
 * Full command-line support for all options
 * `config.ini` not required to start the program anymore - a `config.ini` with all program defaults will be generated automatically
@@ -21,9 +21,9 @@ This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [F
 * Run it in non-interactive mode (`-ni`) without any user intervention - eg. when downloading while being away from the computer
 * You may also run it in fully silent mode without the close prompt at the very end (`-ni -npox`) - eg. running **Fansly Downloader NG** from another script or from a scheduled task/cron job
 * Logs all relevant messages (`Info`, `Warning`, `Error`, ...) of the last few sessions to `fansly_downloader_ng.log`. A history of 5 log files with a maximum size of 1 MiB will be preserved and can be deleted at your own discretion.
-* Easier-to-extend, modern, modular and robust codebase
+* Easier-to-maintain, modern, modular and robust codebase
 
-**Fansly & OnlyFans Downloader NG** is the go-to app for all your bulk media downloading needs. Download photos, videos, audio or any other media from Fansly and OnlyFans. This powerful dual-platform tool has got you covered! Say goodbye to the hassle of individually downloading each piece of media – now you can download them all or just some in one go.
+**Fansly & OnlyFans Downloader NG** is focused on bulk media downloading. Download photos, videos, audio, or other supported media from Fansly and OnlyFans without individually saving each item by hand.
 
 ## Features
 
@@ -39,6 +39,10 @@ This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [F
 * **M3U8 Support** - Download streaming videos automatically
 * **Bulk Processing** - Easily update prior download folders
 * **Customizable** - Separate media into sub-folders, download previews, and more
+
+## Removed Functionality
+
+The built-in Image Crop Tool and Watermark Auto-Crop Tool are no longer included in the public downloader app. The downloader now focuses on download management, creator configuration, deduplication, progress tracking, and platform-specific GUI/CLI workflows.
 
 For detailed configuration settings, see the [Wiki](https://github.com/Frangus90/fansly-downloader-ng/wiki/Explanation-of-provided-programs-&-their-functionality#explanation-of-configini).
 
