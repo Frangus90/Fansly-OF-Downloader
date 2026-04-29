@@ -45,9 +45,6 @@ def build_layout(parent, state, handlers, toggle_log_callback=None, check_update
     sections["settings"] = SettingsSection(scroll_container, state.config)
     sections["settings"].pack(fill="x", padx=10, pady=5)
 
-    # Tools section (inside scrollable area)
-    sections["tools"] = build_tools_section(scroll_container, handlers)
-
     # Progress section (inside scrollable area)
     from gui.widgets.progress_section import ProgressSection
 
@@ -142,45 +139,3 @@ def build_status_bar(parent, toggle_log_callback=None, check_update_callback=Non
         update_button.pack(side="right", padx=5)
 
     return {"label": status_label, "log_button": log_button, "update_button": update_button}
-
-
-def build_tools_section(parent, handlers):
-    """Build tools section with Image Crop Tool and Watermark Auto-Crop buttons"""
-    tools_frame = ctk.CTkFrame(parent)
-    tools_frame.pack(fill="x", padx=10, pady=5)
-
-    # Title
-    title = ctk.CTkLabel(
-        tools_frame,
-        text="Tools",
-        font=("Arial", 16, "bold"),
-        anchor="w"
-    )
-    title.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="w")
-
-    # Image Crop Tool button
-    crop_btn = ctk.CTkButton(
-        tools_frame,
-        text="Open Image Crop Tool",
-        command=handlers.on_open_crop_tool,
-        height=35,
-        font=("Arial", 12),
-        fg_color="#3b8ed0",
-    )
-    crop_btn.grid(row=1, column=0, padx=10, pady=(5, 5), sticky="ew")
-
-    # Watermark Auto-Crop button
-    watermark_btn = ctk.CTkButton(
-        tools_frame,
-        text="Open Watermark Auto-Crop",
-        command=handlers.on_open_watermark_crop,
-        height=35,
-        font=("Arial", 12),
-        fg_color="#5bc0de",
-    )
-    watermark_btn.grid(row=2, column=0, padx=10, pady=(5, 10), sticky="ew")
-
-    # Configure grid
-    tools_frame.grid_columnconfigure(0, weight=1)
-
-    return tools_frame

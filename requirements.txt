@@ -14,16 +14,3 @@ websockets==12.0
 # GUI Dependencies
 customtkinter>=5.2.0
 darkdetect>=0.8.0
-tkinterdnd2>=0.3.0
-
-# Image processing dependencies
-numpy>=1.24.0
-
-# Enhanced compression features
-scikit-image>=0.21.0  # SSIM quality validation
-mozjpeg-lossless-optimization>=1.1.2  # MozJPEG lossless optimization
-pillow-avif-plugin>=1.4.0  # AVIF format support
-
-# Watermark detection (OCR) - optional, only needed for source installs
-# In frozen exe builds, easyocr is installed on-demand into an embedded Python env
-# easyocr>=1.7.0

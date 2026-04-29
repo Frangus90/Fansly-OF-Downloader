@@ -4,7 +4,6 @@ Build OnlyFans UI using similar structure to Fansly
 """
 
 import customtkinter as ctk
-from gui.layout import build_tools_section
 
 
 def build_onlyfans_layout(parent, state, handlers, toggle_log_callback=None, check_update_callback=None):
@@ -42,9 +41,6 @@ def build_onlyfans_layout(parent, state, handlers, toggle_log_callback=None, che
     from gui.widgets.onlyfans_settings_section import OnlyFansSettingsSection
     sections["settings"] = OnlyFansSettingsSection(scroll_container, state.config)
     sections["settings"].pack(fill="x", padx=10, pady=5)
-
-    # Tools section (reuse - includes Image Crop Tool)
-    sections["tools"] = build_tools_section(scroll_container, handlers)
 
     # Progress section (reuse)
     from gui.widgets.progress_section import ProgressSection

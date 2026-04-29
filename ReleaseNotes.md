@@ -2,6 +2,18 @@
 
 ## 🗒️ Release Notes
 
+### Unreleased
+
+**Removed Features:**
+
+- **Image Crop Tool removed** - Removed the built-in bulk image cropper from the downloader GUI
+  - Removed the cropper launch buttons, tool handlers, drag-and-drop initialization, cropper UI modules, image processing modules, cropper test file, and cropper screenshot
+  - Removed cropper-related README sections so the public documentation matches the downloader app
+- **Watermark Auto-Crop Tool removed** - Removed OCR-based watermark detection and cropping from the downloader
+  - Removed the OCR worker, watermark cropper UI, OCR install flow, and watermark processing modules
+  - Trimmed downloader requirements and build inputs that only existed for cropper/OCR/compression support
+- **Verification** - Ran downloader crypto tests, GUI import smoke check, stale-reference scan, and release-note formatting checks
+
 ### 1.8.5
 
 **Bug Fixes:**
@@ -17,18 +29,6 @@
   - Prevented a crash in the log badge updater when log messages arrived before the window had been opened
 - **Confirmation/warning popups rendering at tiny size** - Dialogs like "Process Batch?", overwrite/skip prompts, preset save, and compression warnings were clipping their title, message, and buttons
   - Dialogs now size themselves from the content's requested size instead of Tk's pre-layout default, so text, paths, and buttons no longer get cut off
-
-### 1.8.1
-
-**Watermark Auto-Crop Tool:**
-
-- **One-Click EasyOCR Install** - Install EasyOCR directly from the app with a single button click, no terminal required
-- **Automatic GPU Detection** - Detects NVIDIA GPU and installs the correct CUDA-accelerated PyTorch version automatically (CUDA 11.8, 12.1, 12.4, 12.6, 12.8 supported)
-- **CPU Fallback** - Automatically falls back to CPU-only PyTorch if no compatible NVIDIA GPU is detected
-- **Embedded Python Runtime** - EasyOCR runs in its own isolated Python 3.11 environment next to the exe, completely independent from any system Python
-- **No Restart Required** - OCR becomes available immediately after installation completes
-- **GPU/CPU Status Label** - Status shows "EasyOCR: Ready (GPU)" or "EasyOCR: Ready (CPU)" after install
-- **Persistent Worker Process** - EasyOCR model loads once and is reused across all scans in a session, eliminating repeated model load overhead for batch scanning
 
 ### 1.6.1
 

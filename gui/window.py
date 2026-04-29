@@ -34,9 +34,6 @@ class MainWindow(ctk.CTk):
         # Set window icon (taskbar and title bar)
         self._set_window_icon()
 
-        # Initialize tkdnd for drag-and-drop support in child windows
-        self._init_tkdnd()
-
         # Check for setup wizard BEFORE initializing app state
         # This ensures wizard runs before config is loaded
         self._wizard_checked = False
@@ -289,23 +286,6 @@ class MainWindow(ctk.CTk):
                 log(f"Warning: Could not set window icon: {e}")
         else:
             log(f"Warning: Icon file not found at {icon_path}")
-
-    def _init_tkdnd(self):
-        """Initialize tkdnd for drag-and-drop support"""
-        try:
-            # Import DnDWrapper which adds DnD methods to tkinter.BaseWidget
-            from tkinterdnd2.TkinterDnD import _require, DnDWrapper
-            # The import above adds drop_target_register, dnd_bind etc. to all widgets
-
-            # Load tkdnd into the Tcl interpreter
-            _require(self)
-            # Now all widgets (including CTk widgets) have DnD methods available
-        except ImportError:
-            # tkinterdnd2 not installed
-            pass
-        except Exception:
-            # tkdnd loading failed
-            pass
 
     def run(self):
         """Start the GUI main loop"""

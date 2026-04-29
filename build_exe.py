@@ -260,8 +260,6 @@ def build_exe() -> str | None:
             # Config files
             "--add-data=config.sample.ini;.",
             "--add-data=onlyfans_config.ini;.",
-            # OCR worker script (runs under embedded Python)
-            "--add-data=ocr_worker.py;.",
             # Icon file (for runtime taskbar icon)
             "--add-data=resources/fansly_ng.ico;resources",
             # Base packages
@@ -283,14 +281,13 @@ def build_exe() -> str | None:
             "--hidden-import=gui.tabs.onlyfans_tab",
             "--hidden-import=gui.widgets.onlyfans_auth",
             "--hidden-import=gui.widgets.credential_help",
-            # Exclude heavy OCR/ML dependencies (installed on-demand via app)
+            # Exclude heavy ML dependencies not used by the downloader
             "--exclude-module=easyocr",
             "--exclude-module=torch",
             "--exclude-module=torchvision",
             "--exclude-module=torchaudio",
             "--exclude-module=scipy",
             "--exclude-module=cv2",
-            "--exclude-module=skimage",
             "--exclude-module=shapely",
             "--clean",
             "--noconfirm",

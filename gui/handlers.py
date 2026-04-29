@@ -209,21 +209,6 @@ class EventHandlers:
                 return False
         return True
 
-    def on_open_crop_tool(self):
-        """Handle opening the image crop tool window (CustomTkinter version)"""
-        from gui.tools.image_crop_window import ImageCropWindow
-
-        # Open crop tool window (it will load last used dir or use default)
-        crop_window = ImageCropWindow(self.window, default_output_dir=None)
-        crop_window.focus()
-
-    def on_open_watermark_crop(self):
-        """Handle opening the watermark auto-crop tool window"""
-        from gui.tools.watermark_crop_window import WatermarkCropWindow
-
-        watermark_window = WatermarkCropWindow(self.window, default_output_dir=None)
-        watermark_window.focus()
-
     def import_subscriptions(self) -> dict:
         """
         Import all Fansly subscriptions.
@@ -467,21 +452,6 @@ class OnlyFansEventHandlers:
         log_window = getattr(self.window, "log_window", None)
         is_visible = bool(log_window and log_window.winfo_viewable())
         update_log_button_badge(log_button, self.unread_warnings, self.unread_errors, is_visible)
-
-    def on_open_crop_tool(self):
-        """Handle opening the image crop tool window (CustomTkinter version)"""
-        from gui.tools.image_crop_window import ImageCropWindow
-
-        # Open crop tool window (it will load last used dir or use default)
-        crop_window = ImageCropWindow(self.window, default_output_dir=None)
-        crop_window.focus()
-
-    def on_open_watermark_crop(self):
-        """Handle opening the watermark auto-crop tool window"""
-        from gui.tools.watermark_crop_window import WatermarkCropWindow
-
-        watermark_window = WatermarkCropWindow(self.window, default_output_dir=None)
-        watermark_window.focus()
 
     def on_close(self):
         """Handle window close request - stop downloads if running"""

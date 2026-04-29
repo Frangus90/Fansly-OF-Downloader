@@ -11,7 +11,6 @@ A powerful, feature-rich tool for downloading content from Fansly and OnlyFans. 
 
 ![Fansly Downloader NG Screenshot GUI](resources/python_THN03KTORt.png)
 ![OF Downloader NG Screenshot GUI](resources/python_lcSK3Te4hd.png)
-![Fansly Downloader NG Bulk Cropper Screenshot](resources/python_yGNIgdcM4X.png)
 
 This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [Fansly Downloader](https://github.com/Avnsx/fansly-downloader), expanded to support both Fansly and OnlyFans. **Fansly & OnlyFans Downloader NG** supports new features:
 
@@ -38,8 +37,6 @@ This is a rewrite/refactoring of [Avnsx](https://github.com/Avnsx)'s original [F
 * **Cross-Platform** - Windows, Linux, and macOS support
 * **Automatic Retry Logic** - Handles rate limiting and connection issues
 * **M3U8 Support** - Download streaming videos automatically
-* **Bulk Image Cropping** - Built-in tool for batch image processing (works for both platforms)
-* **Watermark Auto-Crop** - Automatically detect and remove watermarks using OCR with one-click GPU-accelerated EasyOCR install
 * **Bulk Processing** - Easily update prior download folders
 * **Customizable** - Separate media into sub-folders, download previews, and more
 
@@ -128,71 +125,6 @@ python onlyfans_downloader.py -i
 * **Connection Testing** - Verify credentials before downloading
 * **Log Access** - Press Ctrl+L to view diagnostic logs
 * **Incremental Mode** - Toggle to download only new content
-* **Image Crop Tool** - Built-in bulk image cropping with drag-and-drop support (works for all downloads)
-* **Watermark Auto-Crop Tool** - OCR-based watermark detection and removal with GPU acceleration
-
-### Image Crop Tool
-
-The built-in Image Crop Tool allows you to batch process and crop downloaded images:
-
-**Features:**
-* **Bulk Processing** - Process multiple images with individual settings
-* **Drag & Drop** - Add images by dragging onto window
-* **Custom Aspect Ratios** - Presets (1:1, 16:9, 4:5) or custom values
-* **Crop Alignment** - Position crops (center, top, bottom, left, right)
-* **Live Preview** - Interactive canvas with real-time preview
-* **Format Options** - Export as JPEG, PNG, WebP, or AVIF (optional)
-* **Batch Export** - Process entire queue with one click
-
-**Compression Preview:**
-* **Real-time File Size** - See compressed size as you adjust settings
-* **Before/After Comparison** - Slider to compare original vs compressed
-* **Zoom & Pan** - Scroll to zoom, right-click drag to pan
-* **SSIM Score** - Color-coded quality indicator (green/yellow/red)
-* **Smart Format Detection** - Warns for lossless formats (PNG)
-
-**Compression Modes:**
-* **Quick Mode** - Set target file size, auto-selects best format (JPEG > WebP > AVIF)
-* **Advanced Mode** - Full manual control with detailed settings
-
-**Advanced Options:**
-* **Target File Size** - Compress to specific size while maximizing quality
-* **MozJPEG** - 10-15% smaller files at same visual quality
-* **SSIM Validation** - Warns when quality drops below threshold
-* **Chroma Subsampling** - 4:4:4 (quality), 4:2:2 (balanced), 4:2:0 (smallest)
-* **Quality Floor** - Prevent over-compression (60-90 range)
-* **Progressive JPEG** - Better web loading
-* **AVIF Support** - Next-gen compression (optional)
-
-**Usage:**
-
-1. Open Tools → Image Crop Tool
-2. Add images (upload or drag-and-drop)
-3. **Crop Preview** tab - Adjust crop box per image
-4. **Compress Preview** tab - Compare quality with slider
-5. Choose Quick (target size) or Advanced (manual) mode
-6. Process batch to export
-
-### Watermark Auto-Crop Tool
-
-Automatically detect and remove text watermarks from images using OCR:
-
-**Features:**
-* **OCR-Based Detection** - Finds watermark text anywhere in the image
-* **Blacklist Matching** - Only crop regions containing your specified words (e.g. creator username)
-* **Crop All Mode** - Remove all detected text regions without a blacklist
-* **Batch Scanning** - Scan entire folders at once
-* **GPU Acceleration** - Uses NVIDIA GPU via CUDA for fast OCR when available
-
-**EasyOCR Installation:**
-
-1. Open Tools → Watermark Auto-Crop
-2. Click **Install EasyOCR** - the app auto-detects your GPU
-3. Confirm the download (~1.5 GB CPU / ~3 GB GPU)
-4. Installation completes in-app, no restart needed
-5. Status shows **EasyOCR: Ready (GPU)** or **EasyOCR: Ready (CPU)**
-
-> The OCR engine runs in an isolated Python environment next to the exe. No system Python required.
 
 ## CLI Usage
 
