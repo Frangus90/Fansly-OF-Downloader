@@ -29,6 +29,13 @@ from utils.web import get_release_info_from_github
 
 
 APP_NAME = "FanslyOFDownloaderNG"
+PROTECTED_UPDATE_FILES = (
+    "config.ini",
+    "onlyfans_config.ini",
+    "gui_state.json",
+    "onlyfans_gui_state.json",
+    "log_window_settings.json",
+)
 
 
 @dataclass
@@ -279,6 +286,7 @@ def create_windows_update_script(current_exe: Path, downloaded_path: Path) -> Pa
     script_path = Path(tempfile.gettempdir()) / "fansly_update.bat"
     pid = os.getpid()
     app_dir = current_exe.parent
+    protected_files = " ".join(f'"{filename}"' for filename in PROTECTED_UPDATE_FILES)
 
     if downloaded_path.suffix.lower() == ".zip":
         # Zip update: extract over the app directory
@@ -301,16 +309,30 @@ set TEMP_EXTRACT=%TEMP%\\fansly_update_extract
 if exist "%TEMP_EXTRACT%" rmdir /s /q "%TEMP_EXTRACT%"
 mkdir "%TEMP_EXTRACT%"
 
+REM Preserve user config and GUI state files before copying bundled files
+set PRESERVE_DIR=%TEMP%\\fansly_update_preserve
+if exist "%PRESERVE_DIR%" rmdir /s /q "%PRESERVE_DIR%"
+mkdir "%PRESERVE_DIR%"
+for %%F in ({protected_files}) do (
+    if exist "{app_dir}\\%%~F" copy /y "{app_dir}\\%%~F" "%PRESERVE_DIR%\\%%~F" >nul
+)
+
 powershell -Command "Expand-Archive -Path '{downloaded_path}' -DestinationPath '%TEMP_EXTRACT%' -Force"
 
 REM Find the inner folder (zip contains AppName/...)
 for /d %%D in ("%TEMP_EXTRACT%\\*") do set INNER_DIR=%%D
 
-REM Copy extracted files over the app directory (preserves ocr_env etc.)
+REM Copy extracted files over the app directory
 xcopy /s /y /q "%INNER_DIR%\\*" "{app_dir}\\"
+
+REM Restore user config and GUI state files after bundled files are copied
+for %%F in ({protected_files}) do (
+    if exist "%PRESERVE_DIR%\\%%~F" copy /y "%PRESERVE_DIR%\\%%~F" "{app_dir}\\%%~F" >nul
+)
 
 REM Clean up
 rmdir /s /q "%TEMP_EXTRACT%"
+if exist "%PRESERVE_DIR%" rmdir /s /q "%PRESERVE_DIR%"
 del /f /q "{downloaded_path}"
 
 echo Update complete! Starting application...

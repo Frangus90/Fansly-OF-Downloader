@@ -1,9 +1,10 @@
 """Tests for GUI auto-update release asset selection."""
 
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from updater.auto_update import check_for_update
+from updater.auto_update import check_for_update, create_windows_update_script
 
 
 def make_asset(name, url, created_at="2026-05-01T12:00:00Z", downloads=3):
@@ -64,6 +65,23 @@ class AutoUpdateTests(unittest.TestCase):
         self.assertIsNotNone(update)
         self.assertEqual(update.download_url, "https://example/legacy.zip")
         self.assertEqual(update.release_name, "FanslyOFDownloaderNG.zip")
+
+    def test_windows_zip_update_script_preserves_user_configs(self):
+        script_path = create_windows_update_script(
+            Path(r"C:\Apps\FanslyOFDownloaderNG\FanslyOFDownloaderNG.exe"),
+            Path(r"C:\Temp\FanslyOFDownloaderNG-Windows-x64-v1.8.8.zip"),
+        )
+
+        try:
+            script = script_path.read_text()
+        finally:
+            script_path.unlink(missing_ok=True)
+
+        self.assertIn("fansly_update_preserve", script)
+        self.assertIn("config.ini", script)
+        self.assertIn("onlyfans_config.ini", script)
+        self.assertLess(script.index("fansly_update_preserve"), script.index("xcopy /s /y /q"))
+        self.assertGreater(script.rindex("onlyfans_config.ini"), script.index("xcopy /s /y /q"))
 
 
 if __name__ == "__main__":
