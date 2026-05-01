@@ -5,16 +5,20 @@ Application state management
 import json
 import traceback
 from pathlib import Path
+from app_version import APP_VERSION
 from config import FanslyConfig, load_config
 from config.onlyfans_config import OnlyFansConfig, load_onlyfans_config
 from gui.logger import log
+
+
+DEFAULT_PROGRAM_VERSION = APP_VERSION
 
 
 class AppState:
     """Centralized application state for GUI"""
 
     def __init__(self):
-        self.config = FanslyConfig(program_version="0.9.9")
+        self.config = FanslyConfig(program_version=DEFAULT_PROGRAM_VERSION)
         self.is_downloading = False
         self.current_creator = None
 
@@ -95,7 +99,7 @@ class OnlyFansAppState:
     """Application state for OnlyFans tab"""
 
     def __init__(self):
-        self.config = OnlyFansConfig(program_version="1.0.0")
+        self.config = OnlyFansConfig(program_version=DEFAULT_PROGRAM_VERSION)
         self.is_downloading = False
         self.current_creator = None
 

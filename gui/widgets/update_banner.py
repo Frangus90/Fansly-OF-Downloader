@@ -3,6 +3,7 @@ Update notification banner widget
 """
 
 import customtkinter as ctk
+import tkinter.messagebox as messagebox
 from typing import Callable, Optional
 
 from updater.auto_update import UpdateInfo
@@ -68,6 +69,19 @@ class UpdateBanner(ctk.CTkFrame):
         button_frame.grid(row=0, column=2, padx=10, pady=5)
 
         # Update Now button
+        if self.update_info.release_notes:
+            notes_btn = ctk.CTkButton(
+                button_frame,
+                text="Notes",
+                command=self._show_release_notes,
+                width=65,
+                height=28,
+                fg_color="#2e7bcf",
+                hover_color="#2569b0",
+                font=("Arial", 11)
+            )
+            notes_btn.pack(side="left", padx=3)
+
         update_btn = ctk.CTkButton(
             button_frame,
             text="Update Now",
@@ -106,6 +120,13 @@ class UpdateBanner(ctk.CTkFrame):
             font=("Arial", 14)
         )
         close_btn.pack(side="left", padx=3)
+
+    def _show_release_notes(self):
+        """Show release notes for the available update."""
+        messagebox.showinfo(
+            f"Version {self.update_info.version} Release Notes",
+            self.update_info.release_notes or "No release notes available.",
+        )
 
 
 class DownloadProgressBanner(ctk.CTkFrame):

@@ -28,6 +28,9 @@ except ImportError:
 from utils.web import get_release_info_from_github
 
 
+APP_NAME = "FanslyOFDownloaderNG"
+
+
 @dataclass
 class UpdateInfo:
     """Information about an available update"""
@@ -37,6 +40,42 @@ class UpdateInfo:
     published_date: str
     download_count: int
     release_notes: Optional[str] = None
+
+
+def select_update_asset(
+    assets: list[dict],
+    current_platform: str,
+    version: str,
+) -> Optional[dict]:
+    """Select the release asset suitable for the current app/platform."""
+    if current_platform == "Windows":
+        preferred_name = f"{APP_NAME}-Windows-x64-v{version}.zip".lower()
+        legacy_name = f"{APP_NAME}.zip".lower()
+
+        for asset in assets:
+            if asset.get("name", "").lower() == preferred_name:
+                return asset
+
+        for asset in assets:
+            name = asset.get("name", "").lower()
+            if (
+                name.endswith(".zip")
+                and APP_NAME.lower() in name
+                and "windows" in name
+                and "source" not in name
+            ):
+                return asset
+
+        for asset in assets:
+            if asset.get("name", "").lower() == legacy_name:
+                return asset
+
+    for asset in assets:
+        name = asset.get("name", "")
+        if current_platform in name and "source" not in name.lower():
+            return asset
+
+    return None
 
 
 def check_for_update(
@@ -85,29 +124,22 @@ def check_for_update(
     # Find appropriate asset for current platform
     current_platform = 'macOS' if platform.system() == 'Darwin' else platform.system()
 
-    download_url = None
-    release_name = None
+    asset = select_update_asset(release_info.get('assets', []), current_platform, new_version)
+    if asset is None:
+        return None
+
+    download_url = asset.get('browser_download_url')
+    release_name = asset.get('name')
+    download_count = asset.get('download_count', 0)
     published_date = None
-    download_count = 0
 
-    for asset in release_info.get('assets', []):
-        asset_name = asset.get('name', '')
-
-        # Match platform in asset name
-        if current_platform in asset_name:
-            download_url = asset.get('browser_download_url')
-            release_name = asset_name
-            download_count = asset.get('download_count', 0)
-
-            # Parse date
-            created_at = asset.get('created_at')
-            if created_at:
-                try:
-                    d = dateutil.parser.isoparse(created_at).replace(tzinfo=None)
-                    published_date = d.strftime('%d %b %Y')
-                except Exception:
-                    published_date = created_at
-            break
+    created_at = asset.get('created_at')
+    if created_at:
+        try:
+            d = dateutil.parser.isoparse(created_at).replace(tzinfo=None)
+            published_date = d.strftime('%d %b %Y')
+        except Exception:
+            published_date = created_at
 
     if not download_url:
         return None
@@ -116,13 +148,7 @@ def check_for_update(
     release_notes = None
     body = release_info.get("body", "")
     if body:
-        # Extract changelog from markdown code block if present
-        import re
-        match = re.search(r"```(.*)```", body, re.DOTALL | re.MULTILINE)
-        if match:
-            release_notes = match[1].strip()
-        else:
-            release_notes = body[:500]  # First 500 chars
+        release_notes = body
 
     return UpdateInfo(
         version=new_version,

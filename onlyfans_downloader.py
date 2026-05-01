@@ -6,7 +6,9 @@ Separate main script for OnlyFans scraping.
 Parallel to fansly_downloader_ng.py but for OnlyFans.
 """
 
-__version__ = '1.8.7'
+from app_version import APP_VERSION
+
+__version__ = APP_VERSION
 __date__ = '2025-01-13'
 __maintainer__ = 'prof79'
 __copyright__ = f'Copyright (C) 2024-2025 by {__maintainer__}'

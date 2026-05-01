@@ -6,33 +6,47 @@ Usage:
 """
 
 import PyInstaller.__main__
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
 
+APP_NAME = "FanslyOFDownloaderNG"
+RELEASE_NOTES_PATH = Path("ReleaseNotes.md")
+RELEASE_REPO = "Frangus90/fansly-downloader-ng"
+
 # Files containing version strings to update
 VERSION_FILES = [
-    ("fansly_downloader_ng.py", r"^__version__\s*=\s*['\"](.+?)['\"]", "__version__ = '{version}'"),
-    ("onlyfans_downloader.py", r"^__version__\s*=\s*['\"](.+?)['\"]", "__version__ = '{version}'"),
+    ("app_version.py", r"^APP_VERSION\s*=\s*['\"](.+?)['\"]", 'APP_VERSION = "{version}"'),
 ]
 
 
+@dataclass(frozen=True)
+class ReleaseNotes:
+    """Release notes parsed from ReleaseNotes.md."""
+
+    version: str
+    notes: str
+
+
 def get_current_version() -> str:
-    """Read current version from main file"""
-    with open("fansly_downloader_ng.py", "r", encoding="utf-8") as f:
+    """Read current version from the shared version file."""
+    with open("app_version.py", "r", encoding="utf-8") as f:
         content = f.read()
 
-    match = re.search(r"^__version__\s*=\s*['\"](.+?)['\"]", content, re.MULTILINE)
+    match = re.search(r"^APP_VERSION\s*=\s*['\"](.+?)['\"]", content, re.MULTILINE)
     if match:
         return match.group(1)
 
-    raise ValueError("Could not find __version__ in fansly_downloader_ng.py")
+    raise ValueError("Could not find APP_VERSION in app_version.py")
 
 
 def parse_version(version: str) -> tuple[int, int, int]:
@@ -97,6 +111,70 @@ def update_version_in_files(new_version: str):
             f.write(new_content)
 
         print(f"  Updated {gui_file} BUILD_TIMESTAMP")
+
+
+def find_unreleased_release_notes(content: str) -> ReleaseNotes:
+    """Find the single versioned unreleased section in ReleaseNotes.md."""
+    versioned_pattern = re.compile(
+        r"^###\s+(\d+\.\d+\.\d+)\s*-\s*Unreleased\s*$",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    matches = list(versioned_pattern.finditer(content))
+
+    if len(matches) > 1:
+        raise ValueError("ReleaseNotes.md must contain only one unreleased version section")
+
+    if not matches:
+        plain_unreleased = re.search(
+            r"^###\s+Unreleased\s*$",
+            content,
+            re.IGNORECASE | re.MULTILINE,
+        )
+        if plain_unreleased:
+            raise ValueError("ReleaseNotes.md unreleased heading must include a version, e.g. ### 1.8.8 - Unreleased")
+        raise ValueError("Could not find a versioned unreleased section in ReleaseNotes.md")
+
+    match = matches[0]
+    next_heading = re.search(r"^###\s+", content[match.end():], re.MULTILINE)
+    section_end = match.end() + next_heading.start() if next_heading else len(content)
+    notes = content[match.end():section_end].strip()
+
+    if not notes:
+        raise ValueError(f"ReleaseNotes.md section for {match.group(1)} is empty")
+
+    return ReleaseNotes(version=match.group(1), notes=notes)
+
+
+def read_unreleased_release_notes(path: Path = RELEASE_NOTES_PATH) -> ReleaseNotes:
+    """Read and parse the unreleased release notes from disk."""
+    with path.open("r", encoding="utf-8") as f:
+        return find_unreleased_release_notes(f.read())
+
+
+def stamp_release_notes(content: str, version: str, release_date: str) -> str:
+    """Replace a versioned Unreleased heading with the release date."""
+    pattern = re.compile(
+        rf"^###\s+{re.escape(version)}\s*-\s*Unreleased\s*$",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    stamped, count = pattern.subn(f"### {version} - {release_date}", content, count=1)
+
+    if count != 1:
+        raise ValueError(f"Could not find unreleased heading for version {version}")
+
+    return stamped
+
+
+def stamp_release_notes_file(
+    version: str,
+    release_date: str,
+    path: Path = RELEASE_NOTES_PATH,
+) -> None:
+    """Stamp ReleaseNotes.md with the release date."""
+    content = path.read_text(encoding="utf-8")
+    stamped = stamp_release_notes(content, version, release_date)
+    path.write_text(stamped, encoding="utf-8")
+    print(f"  Updated {path}: marked v{version} as released ({release_date})")
 
 
 def prompt_version_bump() -> tuple[str, str]:
@@ -210,23 +288,70 @@ def get_previous_tag() -> str:
     return "initial"
 
 
+def get_latest_github_release_version() -> str | None:
+    """Return the latest GitHub release version without the leading v."""
+    result = run_command(["gh", "release", "view", "--json", "tagName"], check=False)
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+
+    try:
+        release = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+
+    tag_name = release.get("tagName")
+    if not tag_name:
+        return None
+
+    return tag_name.removeprefix("v")
+
+
+def github_release_exists(version: str) -> bool:
+    """Return True if a GitHub release already exists for version."""
+    result = run_command(
+        ["gh", "release", "view", f"v{version}", "--json", "tagName"],
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def git_tag_exists(tag: str) -> bool:
+    """Return True if the local git tag already exists."""
+    result = run_command(["git", "tag", "-l", tag], check=False)
+    return tag in result.stdout.splitlines()
+
+
+def remote_git_tag_exists(tag: str) -> bool:
+    """Return True if the remote git tag already exists."""
+    result = run_command(["git", "ls-remote", "--tags", "origin", tag], check=False)
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
+def validate_release_can_publish(version: str, latest_version: str | None) -> None:
+    """Validate that the release version can be published."""
+    parse_version(version)
+
+    if latest_version is not None and parse_version(version) <= parse_version(latest_version):
+        raise RuntimeError(
+            f"Release version {version} must be newer than latest GitHub release {latest_version}"
+        )
+
+    tag = f"v{version}"
+    if github_release_exists(version):
+        raise RuntimeError(f"GitHub release {tag} already exists")
+
+    if git_tag_exists(tag):
+        raise RuntimeError(f"Git tag {tag} already exists")
+
+    if remote_git_tag_exists(tag):
+        raise RuntimeError(f"Remote git tag {tag} already exists")
+
+
 def create_github_release(version: str, changelog: str, asset_path: str):
     """Create a GitHub release with the built asset (zip or exe)"""
     tag = f"v{version}"
 
     print(f"\nCreating GitHub release {tag}...")
-
-    # Check if tag already exists
-    result = run_command(["git", "tag", "-l", tag], check=False)
-    if tag in result.stdout:
-        print(f"  Warning: Tag {tag} already exists")
-        overwrite = input("  Overwrite? [y/N]: ").strip().lower()
-        if overwrite != "y":
-            print("  Aborting release")
-            return
-        # Delete existing tag locally and remotely
-        run_command(["git", "tag", "-d", tag], check=False)
-        run_command(["git", "push", "origin", f":refs/tags/{tag}"], check=False)
 
     # Stage and commit version changes
     print("\nCommitting version bump...")
@@ -246,22 +371,25 @@ def create_github_release(version: str, changelog: str, asset_path: str):
 
     # Create GitHub release with executable
     print("\nCreating GitHub release...")
-    prev_tag = get_previous_tag()
-    release_notes = f"## What's Changed\n\n{changelog}\n\n---\n\n**Full Changelog**: https://github.com/Frangus90/fansly-downloader-ng/compare/{prev_tag}...{tag}"
+    release_notes_file = Path(tempfile.gettempdir()) / f"fansly-release-notes-{version}.md"
+    release_notes_file.write_text(changelog, encoding="utf-8")
 
-    cmd = [
-        "gh", "release", "create", tag,
-        asset_path,
-        "--title", f"Fansly & OnlyFans Downloader NG {tag}",
-        "--notes", release_notes
-    ]
+    try:
+        cmd = [
+            "gh", "release", "create", tag,
+            asset_path,
+            "--title", f"Fansly & OnlyFans Downloader NG {tag}",
+            "--notes-file", str(release_notes_file),
+        ]
 
-    run_command(cmd)
+        run_command(cmd)
+    finally:
+        release_notes_file.unlink(missing_ok=True)
     print(f"\n✓ Release {tag} created successfully!")
-    print(f"  https://github.com/Frangus90/fansly-downloader-ng/releases/tag/{tag}")
+    print(f"  https://github.com/{RELEASE_REPO}/releases/tag/{tag}")
 
 
-def build_exe() -> str | None:
+def build_exe(version: str | None = None) -> str | None:
     """Build the executable using PyInstaller (onedir mode)"""
     print("\n" + "=" * 60)
     print("Building executable...")
@@ -275,7 +403,7 @@ def build_exe() -> str | None:
         print("Cleaning old dist directory...")
         shutil.rmtree("dist")
 
-    app_name = "FanslyOFDownloaderNG"
+    app_name = APP_NAME
 
     # PyInstaller configuration
     print("Running PyInstaller...")
@@ -332,7 +460,7 @@ def build_exe() -> str | None:
         return None
 
     # Create zip for distribution
-    zip_path = create_distribution_zip(dist_dir, app_name)
+    zip_path = create_distribution_zip(dist_dir, app_name, version=version)
 
     print("\n" + "=" * 60)
     print("✓ Build complete!")
@@ -346,9 +474,12 @@ def build_exe() -> str | None:
     return str(zip_path) if zip_path else str(exe_path)
 
 
-def create_distribution_zip(dist_dir: Path, app_name: str) -> Path | None:
+def create_distribution_zip(dist_dir: Path, app_name: str, version: str | None = None) -> Path | None:
     """Create a zip file from the onedir build for GitHub release."""
-    zip_path = Path("dist") / f"{app_name}.zip"
+    if version:
+        zip_path = Path("dist") / f"{app_name}-Windows-x64-v{version}.zip"
+    else:
+        zip_path = Path("dist") / f"{app_name}.zip"
 
     print(f"\nCreating distribution zip: {zip_path}")
 
@@ -363,6 +494,46 @@ def create_distribution_zip(dist_dir: Path, app_name: str) -> Path | None:
     except Exception as e:
         print(f"⚠ Failed to create zip: {e}")
         return None
+
+
+def run_release_flow() -> None:
+    """Run the release flow driven by ReleaseNotes.md."""
+    release_notes = read_unreleased_release_notes()
+    new_version = release_notes.version
+    changelog = release_notes.notes
+
+    latest_version = get_latest_github_release_version()
+    if latest_version:
+        print(f"\nLatest GitHub release: v{latest_version}")
+    else:
+        print("\nNo existing GitHub release found")
+
+    validate_release_can_publish(new_version, latest_version)
+
+    print(f"\nDetected unreleased version: v{new_version}")
+    print(f"\nRelease notes:\n{changelog}")
+
+    confirm = input("\nProceed with release? [y/N]: ").strip().lower()
+    if confirm != "y":
+        print("Cancelled.")
+        return
+
+    old_version = get_current_version()
+    if old_version != new_version:
+        print(f"\nUpdating version: {old_version} -> {new_version}")
+    else:
+        print(f"\nKeeping version: {new_version}")
+    update_version_in_files(new_version)
+
+    release_date = datetime.now().date().isoformat()
+    stamp_release_notes_file(new_version, release_date)
+
+    exe_path = build_exe(version=new_version)
+
+    if exe_path and os.path.exists(exe_path):
+        create_github_release(new_version, changelog, exe_path)
+    else:
+        print("\nBuild failed, skipping release")
 
 
 def main():
@@ -382,14 +553,8 @@ def main():
                 print("  Auth: gh auth login")
                 sys.exit(1)
 
-            # Version bump
-            old_version, new_version = prompt_version_bump()
-
-            if old_version != new_version:
-                print(f"\nUpdating version: {old_version} -> {new_version}")
-                update_version_in_files(new_version)
-            else:
-                print(f"\nKeeping version: {new_version}")
+            run_release_flow()
+            return
 
             # Changelog
             changelog = prompt_changelog()
@@ -397,16 +562,6 @@ def main():
                 print("\n⚠ No changelog provided, using default")
                 changelog = "Bug fixes and improvements"
 
-            print(f"\nChangelog:\n{changelog}")
-
-            # Build
-            exe_path = build_exe()
-
-            if exe_path and os.path.exists(exe_path):
-                # Create release
-                confirm = input("\nCreate GitHub release? [Y/n]: ").strip().lower()
-                if confirm != "n":
-                    create_github_release(new_version, changelog, exe_path)
             else:
                 print("\n⚠ Build failed, skipping release")
 

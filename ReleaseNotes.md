@@ -2,7 +2,22 @@
 
 ## 🗒️ Release Notes
 
-### Unreleased
+### 1.8.8 - 2026-05-01
+**New Features:**
+
+- **Release notes driven releases** - `build_exe.py --release` now reads `ReleaseNotes.md`, detects the unreleased version, uses that section as the GitHub release notes, and stamps the entry with the release date before tagging
+  - Release builds now publish versioned Windows zip assets like `FanslyOFDownloaderNG-Windows-x64-v1.8.8.zip`
+  - The release script checks GitHub releases and existing tags before publishing so an already-released version is not reused accidentally
+- **GUI auto-updater install flow** - The GUI updater now finds the Windows release zip, downloads it, extracts it over the installed app folder, and restarts the app without requiring users to download or unzip releases manually
+  - The updater still supports the older `FanslyOFDownloaderNG.zip` asset name as a fallback
+  - Update notifications can show release notes from the GitHub release body
+
+**Improvements:**
+
+- **Shared version source** - Fansly, OnlyFans, and GUI startup state now read the app version from one shared module instead of hardcoded GUI placeholder versions
+- **Updater/release tests** - Added unit coverage for release-note parsing/stamping, updater asset selection, and shared version wiring
+
+### 1.8.7
 
 **Removed Features:**
 
