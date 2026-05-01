@@ -2,8 +2,7 @@
 
 ## 🗒️ Release Notes
 
-### 1.8.8 - Unreleased
-
+### 1.8.8 - 2026-05-01
 **New Features:**
 
 - **Release notes driven releases** - `build_exe.py --release` now reads `ReleaseNotes.md`, detects the unreleased version, uses that section as the GitHub release notes, and stamps the entry with the release date before tagging
@@ -19,7 +18,7 @@
 - **Shared version source** - Fansly, OnlyFans, and GUI startup state now read the app version from one shared module instead of hardcoded GUI placeholder versions
 - **Updater/release tests** - Added unit coverage for release-note parsing/stamping, updater asset selection, and shared version wiring
 
-### 1.8.7
+### 1.8.7 - 2026-04-29
 
 **Removed Features:**
 
@@ -31,7 +30,14 @@
   - Trimmed downloader requirements and build inputs that only existed for cropper/OCR/compression support
 - **Verification** - Ran downloader crypto tests, GUI import smoke check, stale-reference scan, and release-note formatting checks
 
-### 1.8.5
+### 1.8.6 - 2026-04-20
+
+**Bug Fixes:**
+
+- **Confirmation/warning popups rendering at tiny size** - Dialogs like "Process Batch?", overwrite/skip prompts, preset save, and compression warnings were clipping their title, message, and buttons
+  - Dialogs now size themselves from the content's requested size instead of Tk's pre-layout default, so text, paths, and buttons no longer get cut off
+
+### 1.8.5 - 2026-04-19
 
 **Bug Fixes:**
 
@@ -47,7 +53,58 @@
 - **Confirmation/warning popups rendering at tiny size** - Dialogs like "Process Batch?", overwrite/skip prompts, preset save, and compression warnings were clipping their title, message, and buttons
   - Dialogs now size themselves from the content's requested size instead of Tk's pre-layout default, so text, paths, and buttons no longer get cut off
 
-### 1.6.1
+### 1.8.4 - 2026-03-24
+
+**Bug Fixes:**
+
+- General bug fixing release
+
+### 1.8.3 - 2026-02-27
+
+**Bug Fixes:**
+
+- Fixed high memory usage in the Auto Crop tool
+
+### 1.8.2 - 2026-02-25
+
+**Bug Fixes:**
+
+- General bug fix release
+
+### 1.8.1 - 2026-02-21
+
+**Improvements:**
+
+- Switched to a zip/folder release package to make EasyOCR installation easier
+- Added automatic detection for CUDA-capable GPU acceleration
+
+### 1.8.0 - 2026-02-20
+
+**New Features:**
+
+- **Watermark Auto-Crop Tool** - OCR-based tool that detects and crops watermark text bars from images
+  - Blacklist matching with fuzzy matching for common OCR misreads
+  - Sensitivity presets from Low through Max
+  - Crop-all override for detected text regions
+  - Batch processing, live preview, GPU acceleration support, and drag-and-drop
+
+**Setup:**
+
+- EasyOCR is not bundled with the executable; install instructions are provided in the app
+
+### 1.7.2 - 2026-02-18
+
+**Bug Fixes:**
+
+- General bug fixes and improvements
+
+### 1.7.1 - 2026-02-03
+
+**Bug Fixes:**
+
+- Fixed an error with the log window/log handling
+
+### 1.6.1 - Maintenance notes (no GitHub release)
 
 **Bug Fixes:**
 
@@ -59,7 +116,7 @@
 - Added 5-minute timeout to FFmpeg subprocess to prevent freezes on corrupted video
 - Fixed unsafe URL file extension parsing - now uses proper URL parser with fallback
 
-### 1.6.0
+### 1.6.0 - 2026-01-24
 
 **OnlyFans Messages Support:**
 
@@ -95,7 +152,11 @@
   - Window resizing is smooth
   - Large creator lists load progressively without blocking UI
 
-### 1.5.0 2026-01-03
+**Release Metadata:**
+
+- Published on GitHub as tag `1.6.0`; local tags `1.6.0` and `v1.7.0` point to the same release commit
+
+### 1.5.0 - 2026-01-03
 
 **New Features:**
 
@@ -122,6 +183,79 @@
 
 - Removed plyvel-ci dependency for easier installation (auto-token extraction now optional)
 
+### 1.3.0 - 2025-12-15
+
+**New Features:**
+
+- **Auto-update foundation** - Checks for a new version on startup with optional one-click install
+- **Check for Update button** - Added a manual update check button in the status bar
+- **Skip This Version** - Added an option to dismiss a specific update version
+
+### 1.2.5 - 2025-12-15
+
+**Improvements:**
+
+- Added video and photo checkboxes on both the Fansly and OnlyFans sides
+- Made backend maintenance changes
+
+### 1.2.0 - 2025-12-04
+
+**Major Addition:**
+
+- **OnlyFans Support** - Full platform integration with a dedicated GUI tab and CLI (`onlyfans_downloader.py`)
+  - Separate configuration system (`onlyfans_config.ini`)
+  - Independent authentication and state management
+  - Timeline downloads, account information, and built-in credential extraction guide
+
+**New Features:**
+
+- **Subscription Import** - Automatically import subscribed creators on both platforms
+- **Post Limit Settings** - Configure initial download limits for new creators
+- **Image Crop Tool** - Built-in bulk image cropping and batch processing
+
+**Improvements:**
+
+- Enhanced crop tool cursors, drag-to-create behavior, resize handles, aspect ratio handling, output browsing, filename preservation, and file size compression options
+- Improved error handling and logging throughout
+
+### 1.1.0 - 2025-11-30
+
+**New Features:**
+
+- **Image Crop Tool** - Built-in bulk image cropping and batch processing tool
+  - Interactive crop canvas with real-time preview
+  - Drag-and-drop image input
+  - Custom aspect ratio presets with save/load support
+  - Crop alignment options, batch processing, multiple export formats, quality control, smart conflict handling, and common image format support
+
+### 1.0.1 - 2025-11-22
+
+**Performance:**
+
+- Improved startup time by roughly 1-1.5 seconds through lazy imports
+
+**GUI Improvements:**
+
+- Added an "Open Folder" button to open the download directory on demand
+- Removed the "Open folder when done" checkbox
+- Info-level log messages now appear in the in-app console
+
+**Build:**
+
+- Added application icon to the GUI executable
+
+### 1.0 - 2025-11-16
+
+**Initial Release:**
+
+- Download timeline posts, messages, and collections from Fansly creators
+- Modern GUI with dark theme and setup wizard
+- Command-line interface for advanced users
+- Automatic duplicate detection and smart file organization
+- M3U8 streaming video support with automatic conversion
+- Incremental downloads with per-creator progress tracking
+- Smart rate limiting, automatic retry logic, detailed logging, graceful error handling, and flexible configuration
+
 ### Historical Releases
 
-For detailed version history prior to 1.5.0, see the [full release archive](https://github.com/Frangus90/fansly-downloader-ng/releases).
+For the full GitHub release archive, see the [release archive](https://github.com/Frangus90/fansly-downloader-ng/releases).
